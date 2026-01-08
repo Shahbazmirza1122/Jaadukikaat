@@ -26,13 +26,17 @@ const StorePage: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error || !data || data.length === 0) {
+      if (error) {
+        console.warn('Supabase error fetching products (falling back to static):', error.message || JSON.stringify(error));
+        setProductsList(staticProducts);
+      } else if (!data || data.length === 0) {
+        // Fallback if no data is found either
         setProductsList(staticProducts);
       } else {
         setProductsList(data);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Unexpected error fetching products:', err);
       setProductsList(staticProducts);
     } finally {
       setIsLoading(false);

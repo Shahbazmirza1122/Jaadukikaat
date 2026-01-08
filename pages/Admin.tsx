@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, LayoutDashboard, PenTool, LogOut, Save, Trash2, Plus, CircleCheck, Pencil, Eye, EyeOff, ArrowLeft, Image as ImageIcon, SquareCheck, ScrollText, Loader2, ShoppingBag, X } from 'lucide-react';
+import { Lock, LayoutDashboard, PenTool, LogOut, Save, Trash2, Plus, CircleCheck, Pencil, Eye, EyeOff, ArrowLeft, Image as ImageIcon, SquareCheck, ScrollText, Loader2, ShoppingBag, X, Database } from 'lucide-react';
 import { BlogPost } from '../types';
 import RichTextEditor from '../components/RichTextEditor';
 import { supabase } from '../lib/supabase';
@@ -32,6 +32,9 @@ const Admin: React.FC = () => {
     description: ''
   });
   
+  // Database Schema State
+  const [missingTables, setMissingTables] = useState<string[]>([]);
+  
   // Loading States
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,6 +62,15 @@ const Admin: React.FC = () => {
     }
   }, [isAuthenticated, activeTab]);
 
+  const checkTableError = (error: any, tableName: string) => {
+    // Check for "undefined_table" error (Postgres code 42P01) or specific message
+    if (error && (error.code === '42P01' || error.message?.includes('Could not find the table'))) {
+        setMissingTables(prev => prev.includes(tableName) ? prev : [...prev, tableName]);
+        return true;
+    }
+    return false;
+  };
+
   const fetchPosts = async () => {
     setIsLoading(true);
     const { data, error } = await supabase
@@ -67,7 +79,8 @@ const Admin: React.FC = () => {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('Error fetching posts:', JSON.stringify(error, null, 2));
+        console.error('Error fetching posts:', error);
+        checkTableError(error, 'posts');
     } else {
         const mappedPosts = (data || []).map((p: any) => ({
             ...p,
@@ -76,6 +89,8 @@ const Admin: React.FC = () => {
             isLatest: p.is_latest || p.isLatest
         }));
         setPosts(mappedPosts);
+        // Remove from missing if successful
+        setMissingTables(prev => prev.filter(t => t !== 'posts'));
     }
     setIsLoading(false);
   };
@@ -89,8 +104,11 @@ const Admin: React.FC = () => {
 
     if (error) {
       console.error('Error fetching products:', error);
+      checkTableError(error, 'products');
+      setProducts([]); 
     } else {
       setProducts(data || []);
+      setMissingTables(prev => prev.filter(t => t !== 'products'));
     }
     setIsLoading(false);
   };
@@ -160,7 +178,7 @@ const Admin: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this article?')) {
         const { error } = await supabase.from('posts').delete().eq('id', id);
         if (error) {
-            alert('Error deleting post');
+            alert('Error deleting post: ' + (error.message || 'Unknown error'));
         } else {
             setPosts(posts.filter(p => p.id !== id));
             setNotification('Article deleted successfully.');
@@ -181,7 +199,7 @@ const Admin: React.FC = () => {
         .eq('id', id);
 
     if (error) {
-        alert('Error updating status');
+        alert('Error updating status: ' + (error.message || 'Unknown error'));
     } else {
         setPosts(posts.map(p => p.id === id ? { ...p, status: newStatus } : p));
     }
@@ -228,7 +246,8 @@ const Admin: React.FC = () => {
     
     if (error) {
         console.error("Save error:", JSON.stringify(error, null, 2));
-        alert("Failed to save post to Supabase.");
+        checkTableError(error, 'posts');
+        alert("Failed to save post. " + (checkTableError(error, 'posts') ? "The database table is missing." : error.message));
         return;
     }
     
@@ -278,7 +297,7 @@ const Admin: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) {
-        alert('Error deleting product');
+        alert('Error deleting product: ' + (error.message || 'Unknown error'));
       } else {
         setProducts(products.filter(p => p.id !== id));
         setNotification('Product deleted successfully.');
@@ -303,24 +322,32 @@ const Admin: React.FC = () => {
     if (editProductId) {
       const { error: updateError } = await supabase.from('products').update(payload).eq('id', editProductId);
       error = updateError;
-      setNotification('Product updated successfully!');
     } else {
       const { error: insertError } = await supabase.from('products').insert([payload]);
       error = insertError;
-      setNotification('Product created successfully!');
     }
 
     if (error) {
-      console.error(error);
-      alert('Failed to save product.');
+      console.error('Error saving product:', error);
+      checkTableError(error, 'products');
+      alert('Failed to save product. ' + (checkTableError(error, 'products') ? "The database table is missing." : error.message));
+      setIsLoading(false);
     } else {
+      const successMessage = editProductId ? 'Product updated successfully!' : 'Product created successfully!';
+      setNotification(successMessage);
+      
+      // Update list immediately
       await fetchProducts();
+      
+      // Switch view immediately
+      handleSwitchToProductList();
+      setIsLoading(false);
+
+      // Clear notification after 3 seconds
       setTimeout(() => {
         setNotification(null);
-        handleSwitchToProductList();
-      }, 1000);
+      }, 3000);
     }
-    setIsLoading(false);
   };
 
   if (!isAuthenticated) {
@@ -370,6 +397,49 @@ const Admin: React.FC = () => {
       </div>
     );
   }
+
+  const getSqlSetupInstructions = (tableName: string) => {
+    if (tableName === 'products') {
+        return `create table if not exists public.products (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  name text not null,
+  price text not null,
+  image text not null,
+  category text not null,
+  description text
+);
+
+-- Enable RLS
+alter table public.products enable row level security;
+
+-- OPEN ACCESS POLICIES (For Admin Panel usage without Supabase Auth login)
+create policy "Enable all access for all users" on public.products for all using (true) with check (true);`;
+    }
+    if (tableName === 'posts') {
+        return `create table if not exists public.posts (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  title text not null,
+  excerpt text,
+  content text,
+  author text,
+  image_url text,
+  category text,
+  status text default 'draft',
+  date text,
+  is_latest boolean default false,
+  related_ids text[]
+);
+
+-- Enable RLS
+alter table public.posts enable row level security;
+
+-- OPEN ACCESS POLICIES (For Admin Panel usage without Supabase Auth login)
+create policy "Enable all access for all users" on public.posts for all using (true) with check (true);`;
+    }
+    return '';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row pt-20">
@@ -421,6 +491,42 @@ const Admin: React.FC = () => {
             <CircleCheck className="w-5 h-5 mr-2" />
             {notification}
           </div>
+        )}
+
+        {/* Database Missing Warning */}
+        {missingTables.length > 0 && (
+            <div className="mb-8 bg-amber-50 border border-amber-200 p-6 rounded-xl animate-fade-in">
+                <div className="flex items-start gap-4">
+                    <Database className="w-6 h-6 text-amber-600 mt-1 shrink-0" />
+                    <div className="flex-1">
+                        <h3 className="text-lg font-bold text-amber-800 mb-2">Database Setup Required</h3>
+                        <p className="text-amber-700 mb-4">
+                            The following tables are missing in your Supabase database: <strong>{missingTables.join(', ')}</strong>. 
+                            Please execute the SQL commands below in your Supabase SQL Editor to initialize them.
+                        </p>
+                        
+                        {missingTables.map(table => (
+                            <div key={table} className="mb-4 last:mb-0">
+                                <p className="text-xs font-bold uppercase text-amber-600 mb-2">SQL for {table} table:</p>
+                                <div className="relative group">
+                                    <pre className="bg-slate-900 text-slate-50 p-4 rounded-lg overflow-x-auto text-xs font-mono border border-slate-700">
+                                        {getSqlSetupInstructions(table)}
+                                    </pre>
+                                    <button 
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(getSqlSetupInstructions(table));
+                                            alert('SQL copied to clipboard!');
+                                        }}
+                                        className="absolute top-2 right-2 bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1 rounded transition"
+                                    >
+                                        Copy SQL
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
         )}
 
         {/* DUAA TAB */}
@@ -525,7 +631,7 @@ const Admin: React.FC = () => {
                       ) : products.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                            No products found. Click "New Product" to add one.
+                            {missingTables.includes('products') ? 'Database table missing. Use the SQL above to setup.' : 'No products found. Click "New Product" to add one.'}
                           </td>
                         </tr>
                       ) : (
@@ -658,262 +764,6 @@ const Admin: React.FC = () => {
                         {editProductId ? 'Update Product' : 'Create Product'}
                     </button>
                 </div>
-              </form>
-            )}
-          </div>
-        )}
-
-        {/* BLOG TAB */}
-        {activeTab === 'blog' && (
-          <div className="max-w-6xl mx-auto">
-            {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-              <div>
-                <h1 className="text-3xl font-serif font-bold text-gray-800">
-                  {blogView === 'list' ? 'All Articles' : (editId ? 'Edit Article' : 'Write New Article')}
-                </h1>
-                <p className="text-gray-500 text-sm mt-1">
-                  {blogView === 'list' 
-                    ? 'Manage your published content and drafts.' 
-                    : 'Share your wisdom with the community.'}
-                </p>
-              </div>
-
-              {blogView === 'list' ? (
-                 <button 
-                  onClick={handleSwitchToCreate}
-                  className="bg-spirit-600 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-spirit-700 transition shadow-md flex items-center"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  New Article
-                </button>
-              ) : (
-                <button 
-                  onClick={handleSwitchToList}
-                  className="bg-white text-gray-600 font-bold py-2.5 px-6 rounded-lg border border-gray-200 hover:bg-gray-50 transition flex items-center"
-                >
-                  <ArrowLeft className="w-5 h-5 mr-2" />
-                  Back to List
-                </button>
-              )}
-            </div>
-
-            {/* LIST VIEW */}
-            {blogView === 'list' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b border-gray-100">
-                      <tr>
-                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider w-20">Image</th>
-                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Title / Excerpt</th>
-                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Category</th>
-                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {isLoading ? (
-                           <tr><td colSpan={6} className="text-center py-8"><Loader2 className="animate-spin w-6 h-6 mx-auto text-spirit-500"/></td></tr>
-                      ) : posts.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                            No articles found. Click "New Article" to create one.
-                          </td>
-                        </tr>
-                      ) : (
-                        posts.map((post) => (
-                          <tr key={post.id} className="hover:bg-gray-50 transition group">
-                            <td className="px-6 py-4">
-                              <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
-                                {post.imageUrl ? (
-                                  <img src={post.imageUrl} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  <ImageIcon className="w-6 h-6 m-3 text-gray-300" />
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="font-bold text-gray-900 mb-1 line-clamp-1">{post.title}</div>
-                              <div className="text-xs text-gray-500 line-clamp-1 max-w-xs">{post.excerpt}</div>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">{post.category || 'Uncategorized'}</span>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{post.date}</td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                post.status === 'draft' 
-                                  ? 'bg-gray-100 text-gray-800' 
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
-                                {post.status === 'draft' ? 'Draft' : 'Published'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right whitespace-nowrap">
-                              <div className="flex items-center justify-end space-x-2">
-                                <button 
-                                  onClick={() => handleToggleStatus(post.id)}
-                                  className="p-2 text-gray-400 hover:text-spirit-600 hover:bg-spirit-50 rounded-full transition"
-                                  title={post.status === 'draft' ? "Publish" : "Unpublish"}
-                                >
-                                  {post.status === 'draft' ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                                <button 
-                                  onClick={() => handleEdit(post)}
-                                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition"
-                                  title="Edit"
-                                >
-                                  <Pencil size={18} />
-                                </button>
-                                <button 
-                                  onClick={() => handleDelete(post.id)}
-                                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition"
-                                  title="Delete"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* FORM VIEW */}
-            {blogView === 'form' && (
-              <form onSubmit={handleSaveBlog} className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 space-y-8 animate-fade-in">
-                
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Title</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={blogTitle}
-                      onChange={(e) => setBlogTitle(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none"
-                      placeholder="Enter article title"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
-                    <div className="flex gap-2">
-                        <select 
-                            value={blogCategory} 
-                            onChange={(e) => setBlogCategory(e.target.value)}
-                            className="flex-1 px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none"
-                        >
-                            <option value="">Select Category...</option>
-                            {existingCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                            <option value="new">+ Create New</option>
-                        </select>
-                        {(blogCategory === 'new' || (!existingCategories.includes(blogCategory) && blogCategory !== '')) && (
-                             <input 
-                                type="text"
-                                value={newCategoryInput}
-                                onChange={(e) => setNewCategoryInput(e.target.value)}
-                                placeholder="New Category Name"
-                                className="flex-1 px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none"
-                             />
-                        )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Author</label>
-                        <input 
-                            type="text" 
-                            value={blogAuthor}
-                            onChange={(e) => setBlogAuthor(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Cover Image URL</label>
-                        <div className="flex gap-2">
-                            <input 
-                                type="text" 
-                                value={blogImage}
-                                onChange={(e) => setBlogImage(e.target.value)}
-                                className="flex-1 px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none"
-                            />
-                            {blogImage && (
-                                <div className="w-12 h-12 rounded overflow-hidden border border-gray-200 shrink-0">
-                                    <img src={blogImage} alt="Preview" className="w-full h-full object-cover" />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Short Excerpt</label>
-                    <textarea 
-                        rows={3}
-                        value={blogExcerpt}
-                        onChange={(e) => setBlogExcerpt(e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none resize-none"
-                        placeholder="A brief summary for the blog list..."
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Content</label>
-                    <RichTextEditor 
-                        initialValue={blogContent}
-                        onChange={setBlogContent}
-                    />
-                </div>
-
-                {/* Related Articles Selection */}
-                <div>
-                     <label className="block text-sm font-bold text-gray-700 mb-4">Related Articles</label>
-                     <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {posts.filter(p => p.id !== editId).map(p => (
-                            <div 
-                                key={p.id} 
-                                onClick={() => toggleRelatedPost(p.id)}
-                                className={`flex items-center p-2 rounded cursor-pointer border transition ${selectedRelatedIds.includes(p.id) ? 'bg-spirit-50 border-spirit-500' : 'hover:bg-gray-50 border-transparent'}`}
-                            >
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center mr-3 ${selectedRelatedIds.includes(p.id) ? 'bg-spirit-600 border-spirit-600' : 'border-gray-300'}`}>
-                                    {selectedRelatedIds.includes(p.id) && <SquareCheck size={14} className="text-white" />}
-                                </div>
-                                <div className="flex-1 overflow-hidden">
-                                    <p className="text-sm font-bold text-gray-800 truncate">{p.title}</p>
-                                    <p className="text-xs text-gray-500">{p.date}</p>
-                                </div>
-                            </div>
-                        ))}
-                        {posts.length <= 1 && <p className="text-sm text-gray-400 p-2">No other articles available to relate.</p>}
-                     </div>
-                </div>
-
-                <div className="flex justify-end pt-4 border-t border-gray-100">
-                    <button 
-                        type="button"
-                        onClick={handleSwitchToList}
-                        className="mr-4 text-gray-500 font-bold px-6 py-3 hover:text-gray-700 transition"
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        type="submit"
-                        className="bg-spirit-900 text-white font-bold px-8 py-3 rounded-lg hover:bg-spirit-800 transition shadow-lg flex items-center"
-                    >
-                        <Save className="w-5 h-5 mr-2" />
-                        {editId ? 'Update Article' : 'Publish Article'}
-                    </button>
-                </div>
-
               </form>
             )}
 
