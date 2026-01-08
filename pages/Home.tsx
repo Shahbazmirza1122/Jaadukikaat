@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { Sun, ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Mail, Phone, User, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, MapPin, Globe, Users, MessageSquare, Check, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Sun, ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Mail, Phone, User, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, MapPin, Globe, Users, MessageSquare, Check, ChevronLeft, ChevronRight, ShoppingBag, Tag } from 'lucide-react';
 import { BlogPost } from '../types';
 import { products as staticProducts, Product } from '../data/products';
 import { submitToGoogleSheet } from '../services/sheetService';
@@ -61,7 +61,21 @@ const Home: React.FC = () => {
         if (error || !data || data.length === 0) {
             setProductsList(staticProducts);
         } else {
-            setProductsList(data);
+            const mapped = data.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                image: p.image,
+                category: p.category,
+                description: p.description,
+                sku: p.sku,
+                salePrice: p.sale_price,
+                saleStart: p.sale_start,
+                saleEnd: p.sale_end,
+                isOutOfStock: p.is_out_of_stock,
+                isBlurBeforeBuy: p.is_blur_before_buy
+            }));
+            setProductsList(mapped);
         }
     };
 
@@ -217,8 +231,20 @@ const Home: React.FC = () => {
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
     e.stopPropagation();
+    if (product.isOutOfStock) return;
     addToCart(product);
     alert(`${product.name} added to cart!`);
+  };
+
+  const isSaleActive = (product: Product) => {
+    if (!product.salePrice) return false;
+    const now = new Date();
+    const start = product.saleStart ? new Date(product.saleStart) : null;
+    const end = product.saleEnd ? new Date(product.saleEnd) : null;
+    
+    if (start && now < start) return false;
+    if (end && now > end) return false;
+    return true;
   };
 
   // Donation Handlers
@@ -448,7 +474,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="w-full overflow-x-hidden relative bg-white">
-      {/* Hero Section */}
+      {/* ... Hero Section remains unchanged ... */}
       <section id="top" className="relative h-[85vh] md:h-screen overflow-hidden bg-spirit-900">
         {slides.map((slide, index) => (
           <div key={index} className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
@@ -509,17 +535,52 @@ const Home: React.FC = () => {
                 className="flex gap-8 overflow-x-auto pb-8 snap-x mandatory hide-scrollbar"
                 style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-                {productsList.map(product => (
+                {productsList.map(product => {
+                    const onSale = isSaleActive(product);
+                    const currentPrice = onSale ? product.salePrice : product.price;
+
+                    return (
                     <Link to={`/product/${product.id}`} key={product.id} className="min-w-[280px] md:min-w-[320px] bg-white rounded-3xl p-4 shadow-lg hover:shadow-2xl transition-all duration-300 group snap-center border border-spirit-100 flex-shrink-0 flex flex-col cursor-pointer relative">
                         {/* Image Area */}
                         <div className="h-72 rounded-2xl overflow-hidden mb-6 relative">
-                            <img src={product.image} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" />
-                            <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-900 shadow-sm">
-                                {product.category}
+                            <img 
+                                src={product.image} 
+                                alt={product.name} 
+                                className={`w-full h-full object-cover transform group-hover:scale-110 transition duration-700 
+                                    ${product.isOutOfStock ? 'grayscale opacity-70' : ''}
+                                    ${product.isBlurBeforeBuy ? 'blur-md scale-110' : ''}
+                                `} 
+                            />
+                            
+                            {/* Blur Overlay Label */}
+                            {product.isBlurBeforeBuy && !product.isOutOfStock && (
+                                <div className="absolute inset-0 flex items-center justify-center z-20">
+                                    <div className="bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 text-white font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2">
+                                        <Lock size={12} /> Hidden
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Out of Stock Overlay */}
+                            {product.isOutOfStock && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
+                                    <span className="bg-red-600 text-white px-3 py-1 rounded-full font-bold uppercase text-[10px] tracking-wider shadow-lg">Sold Out</span>
+                                </div>
+                            )}
+
+                            <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-30">
+                                <span className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-900 shadow-sm">
+                                    {product.category}
+                                </span>
+                                {onSale && !product.isOutOfStock && (
+                                    <span className="bg-red-500 text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1">
+                                        <Tag size={10} /> Sale
+                                    </span>
+                                )}
                             </div>
                             
                             {/* Overlay Actions */}
-                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 z-10">
                                <button 
                                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }}
                                   className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg ${wishlist.includes(product.id) ? 'bg-red-500 text-white' : 'bg-white text-slate-700 hover:text-red-500'}`}
@@ -533,17 +594,27 @@ const Home: React.FC = () => {
                         <div className="px-2 pb-2 flex-grow flex flex-col">
                             <h3 className="font-serif font-bold text-xl text-spirit-900 mb-1 truncate group-hover:text-accent-600 transition-colors" title={product.name}>{product.name}</h3>
                             <div className="flex justify-between items-center mt-auto pt-4">
-                                <span className="text-accent-600 font-bold text-xl">{product.price}</span>
+                                <div className="flex flex-col">
+                                    {onSale ? (
+                                        <>
+                                            <span className="text-red-600 font-bold text-xl">{currentPrice}</span>
+                                            <span className="text-slate-400 text-xs line-through decoration-slate-400">{product.price}</span>
+                                        </>
+                                    ) : (
+                                        <span className="text-accent-600 font-bold text-xl">{product.price}</span>
+                                    )}
+                                </div>
                                 <button 
                                     onClick={(e) => handleAddToCart(e, product)}
-                                    className="px-4 py-2 rounded-full bg-spirit-50 text-spirit-900 flex items-center gap-2 hover:bg-accent-500 hover:text-white transition-colors text-sm font-bold"
+                                    disabled={!!product.isOutOfStock}
+                                    className={`px-4 py-2 rounded-full flex items-center gap-2 transition-colors text-sm font-bold ${product.isOutOfStock ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-spirit-50 text-spirit-900 hover:bg-accent-500 hover:text-white'}`}
                                 >
-                                    <ShoppingBag size={16} /> Add to Cart
+                                    <ShoppingBag size={16} /> {product.isOutOfStock ? 'Sold Out' : 'Add'}
                                 </button>
                             </div>
                         </div>
                     </Link>
-                ))}
+                )})}
                 
                 {/* Add a spacer at the end for better scrolling feel */}
                 <div className="min-w-[20px]"></div>
@@ -558,13 +629,12 @@ const Home: React.FC = () => {
             </div>
         </div>
       </section>
-      
-      {/* ... (Rest of the file remains unchanged) ... */}
-      
-      {/* About Section */}
+
+      {/* Rest of the file remains unchanged... */}
       <section id="about" className="py-32 bg-white">
         {/* ... */}
          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+          {/* ... (rest of about section) ... */}
           <div className="relative group/aboutImg">
             <div className="absolute -top-6 -left-6 w-32 h-32 bg-accent-50 rounded-full -z-10 animate-pulse"></div>
             <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1767284640/Rohaniyat_l4p17j.webp" alt="Meditation" className="rounded-[3rem] shadow-2xl h-[550px] w-full object-cover transition-transform duration-700 group-hover/aboutImg:scale-[1.02]" />
@@ -584,14 +654,17 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
-
-      {/* Donation / Support Section */}
+      
+      {/* ... Rest of existing sections and modals (Donation, Services, Prayer, Modals) ... */}
+      {/* ... Using previous code for the remaining sections ... */}
       <section className="py-24 bg-spirit-900 relative overflow-hidden border-t border-white/5">
+        {/* ... Donation section content from previous file ... */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent-500/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
             <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-accent-500/10 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/3"></div>
         </div>
         <div className="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* ... Donation content ... */}
             <div className="animate-fade-in-up">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-400 text-xs font-bold uppercase tracking-widest mb-8">
                     <Heart size={14} className="fill-current animate-pulse" />
@@ -626,6 +699,7 @@ const Home: React.FC = () => {
             </div>
 
             <div className="relative group">
+                {/* ... Donation form ... */}
                 <div className="absolute -inset-1 bg-gradient-to-br from-accent-500 to-spirit-700 rounded-[2.5rem] blur opacity-40 group-hover:opacity-60 transition duration-1000"></div>
                 <div className="relative bg-spirit-800/50 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 md:p-10 shadow-2xl">
                     <div className="text-center mb-8">
@@ -710,6 +784,7 @@ const Home: React.FC = () => {
 
       {/* Collective Prayer Section */}
       <section className="py-24 relative overflow-hidden bg-slate-950">
+        {/* ... */}
         <div className="absolute inset-0 z-0">
             <img 
                 src="https://images.unsplash.com/photo-1565552629477-ff14d8db1922?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" 
@@ -746,6 +821,7 @@ const Home: React.FC = () => {
 
       {/* Online Istikhara Section */}
       <section className="py-24 bg-white relative overflow-hidden">
+        {/* ... */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-accent-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2"></div>
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="animate-fade-in-up">
@@ -784,6 +860,7 @@ const Home: React.FC = () => {
 
       {/* Get Ism-e-Azam Section */}
       <section className="py-24 bg-slate-50 relative overflow-hidden">
+         {/* ... */}
          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white group order-last lg:order-first">
                 <img 
@@ -854,10 +931,10 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ... MODALS (Kept same as before, no changes needed inside modals for this step) ... */}
-      {/* Donation Modal */}
+      {/* ... MODALS (Donation, Consult, etc. - Kept exactly as they were in the previous file version, omitted here for brevity as they are unchanged) ... */}
       {isDonationModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
+          {/* ... modal content ... */}
           <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsDonationModalOpen(false)}></div>
           <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl overflow-hidden animate-fade-in-up border border-slate-100 max-h-[90vh] flex flex-col">
             <div className="bg-spirit-900 px-6 py-4 flex justify-between items-center shrink-0">
@@ -929,7 +1006,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Istikhara, Ism-e-Azam, Prayer, Contact Modals - Using simplified placeholders to save space as logic repeats structure */}
+      {/* Istikhara, Ism-e-Azam, Prayer, Contact Modals - (Kept same logic, just placeholder comments to keep file size manageable while ensuring functionality remains) */}
       {isIstikharaModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsIstikharaModalOpen(false)}></div>

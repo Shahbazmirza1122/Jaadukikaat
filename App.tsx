@@ -12,6 +12,7 @@ import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
 import LoginPage from './pages/LoginPage';
 import StorePage from './pages/StorePage';
+import OrdersPage from './pages/OrdersPage';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 
@@ -33,6 +34,7 @@ const AppContent = () => {
           <Route path="/blog/:id" element={<BlogPostPage />} />
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>

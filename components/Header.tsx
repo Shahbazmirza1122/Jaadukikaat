@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Sun, ShoppingCart, User as UserIcon, LogOut } from 'lucide-react';
+import { Menu, X, Sun, ShoppingCart, User as UserIcon, LogOut, Package } from 'lucide-react';
 import DailyDuaa from './DailyDuaa';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -131,12 +131,20 @@ const Header: React.FC = () => {
                               </div>
                               <div className="p-2">
                                 <Link 
+                                  to="/orders" 
+                                  onClick={() => setUserMenuOpen(false)}
+                                  className="w-full text-left px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-spirit-900 rounded-xl flex items-center gap-3 transition-colors font-medium mb-1"
+                                >
+                                   <Package size={16} /> 
+                                   <span>My Orders</span>
+                                </Link>
+                                <Link 
                                   to="/cart" 
                                   onClick={() => setUserMenuOpen(false)}
                                   className="w-full text-left px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-spirit-900 rounded-xl flex items-center gap-3 transition-colors font-medium mb-1"
                                 >
                                    <ShoppingCart size={16} /> 
-                                   <span>My Orders</span>
+                                   <span>Cart</span>
                                 </Link>
                                 <button 
                                   onClick={handleLogout}
@@ -220,7 +228,7 @@ const Header: React.FC = () => {
                   </Link>
 
                   {isAuthenticated && user ? (
-                     <div className="flex items-center justify-between">
+                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-3">
                            <div className="w-10 h-10 rounded-full bg-accent-500 flex items-center justify-center text-white font-bold">
                               {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
@@ -230,7 +238,8 @@ const Header: React.FC = () => {
                                <p className="text-xs text-slate-500">Logged In</p>
                            </div>
                         </div>
-                        <button onClick={handleLogout} className="text-red-500 font-bold text-sm">Logout</button>
+                        <Link to="/orders" onClick={() => setIsOpen(false)} className="text-spirit-600 font-bold flex items-center gap-2"><Package size={18}/> My Orders</Link>
+                        <button onClick={handleLogout} className="text-red-500 font-bold text-sm text-left flex items-center gap-2"><LogOut size={18}/> Logout</button>
                      </div>
                   ) : (
                     <Link 

@@ -6,6 +6,13 @@ export interface Product {
   image: string;
   category: string;
   description?: string;
+  // New Fields
+  sku?: string;
+  salePrice?: string;
+  saleStart?: string;
+  saleEnd?: string;
+  isOutOfStock?: boolean;
+  isBlurBeforeBuy?: boolean;
 }
 
 export const products: Product[] = [
@@ -15,7 +22,9 @@ export const products: Product[] = [
     price: '$85.00',
     image: 'https://images.unsplash.com/photo-1615486511262-c7b5c7f4297e?q=80&w=800&auto=format&fit=crop',
     category: 'Gemstones',
-    description: 'A rare, authentic Yemeni Aqeeq stone known for its grounding properties and ability to ward off negative energy. Polished to perfection, this gemstone is perfect for rings or pendants.'
+    description: 'A rare, authentic Yemeni Aqeeq stone known for its grounding properties and ability to ward off negative energy. Polished to perfection, this gemstone is perfect for rings or pendants.',
+    sku: 'GEM-001',
+    isOutOfStock: false
   },
   {
     id: '2',
@@ -23,7 +32,8 @@ export const products: Product[] = [
     price: '$25.00',
     image: 'https://images.unsplash.com/photo-1629738096180-d6363c373a63?q=80&w=800&auto=format&fit=crop',
     category: 'Accessories',
-    description: 'Hand-strung crystal Tasbih designed for dhikr and meditation. The cool touch of the beads aids in focus and tranquility during your spiritual recitations.'
+    description: 'Hand-strung crystal Tasbih designed for dhikr and meditation. The cool touch of the beads aids in focus and tranquility during your spiritual recitations.',
+    sku: 'ACC-002'
   },
   {
     id: '3',
@@ -31,7 +41,8 @@ export const products: Product[] = [
     price: '$40.00',
     image: 'https://images.unsplash.com/photo-1595535373192-fc046098858f?q=80&w=800&auto=format&fit=crop',
     category: 'Fragrance',
-    description: 'A thick, creamy, and long-lasting musk with a clean, powdery scent. Traditionally used for purification, its aroma brings a sense of absolute cleanliness and serenity.'
+    description: 'A thick, creamy, and long-lasting musk with a clean, powdery scent. Traditionally used for purification, its aroma brings a sense of absolute cleanliness and serenity.',
+    sku: 'FRG-003'
   },
   {
     id: '4',

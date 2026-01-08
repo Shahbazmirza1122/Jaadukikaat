@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Lock, CircleCheck, Loader2, LogIn, CreditCard, ShieldCheck } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Lock, CircleCheck, Loader2, LogIn, CreditCard, ShieldCheck, Ticket, X } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { submitToGoogleSheet, sendOrderEmail } from '../services/sheetService';
+import { supabase } from '../lib/supabase';
 
 const CartPage: React.FC = () => {
   const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
@@ -27,6 +28,13 @@ const CartPage: React.FC = () => {
   const [cvc, setCvc] = useState('');
   const [cardBrand, setCardBrand] = useState<string>('unknown');
 
+  // Coupon State
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [couponError, setCouponError] = useState('');
+  const [isVerifyingCoupon, setIsVerifyingCoupon] = useState(false);
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
 
@@ -37,6 +45,83 @@ const CartPage: React.FC = () => {
         setEmail(user.email || '');
     }
   }, [isAuthenticated, user]);
+
+  // Recalculate discount if cart changes
+  useEffect(() => {
+    if (appliedCoupon) {
+        calculateDiscount(appliedCoupon);
+    } else {
+        setDiscountAmount(0);
+    }
+  }, [cart, cartTotal, appliedCoupon]);
+
+  const calculateDiscount = (coupon: any) => {
+      let discount = 0;
+      if (coupon.product_id) {
+          // Specific product discount
+          const item = cart.find(i => i.id === coupon.product_id);
+          if (item) {
+              const priceVal = parseFloat(item.price.replace(/[^0-9.]/g, ''));
+              const itemTotal = priceVal * item.quantity;
+              discount = itemTotal * (coupon.discount_percent / 100);
+          } else {
+              // Item removed from cart, invalidate discount but keep coupon state valid? 
+              // Better to show 0 discount or auto-remove. Let's show 0.
+              discount = 0;
+          }
+      } else {
+          // Global discount
+          discount = cartTotal * (coupon.discount_percent / 100);
+      }
+      setDiscountAmount(discount);
+  };
+
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCouponError('');
+    const code = couponCode.trim().toUpperCase();
+    
+    if (!code) return;
+
+    setIsVerifyingCoupon(true);
+
+    try {
+        const { data, error } = await supabase
+            .from('coupons')
+            .select('*')
+            .eq('code', code)
+            .single();
+
+        if (error || !data) {
+            setCouponError('Invalid coupon code');
+            setAppliedCoupon(null);
+        } else {
+            // Check if applicable
+            if (data.product_id) {
+                const hasItem = cart.some(i => i.id === data.product_id);
+                if (!hasItem) {
+                    setCouponError('This code applies to items not in your cart');
+                    setIsVerifyingCoupon(false);
+                    return;
+                }
+            }
+            setAppliedCoupon(data);
+            calculateDiscount(data);
+            setCouponCode('');
+        }
+    } catch (err) {
+        setCouponError('Error verifying coupon');
+    } finally {
+        setIsVerifyingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+      setAppliedCoupon(null);
+      setDiscountAmount(0);
+  };
+
+  const finalTotal = Math.max(0, cartTotal - discountAmount);
 
   // Card Detection Logic
   const detectCardType = (number: string) => {
@@ -117,6 +202,8 @@ const CartPage: React.FC = () => {
 
     const orderId = `ORD-${Date.now().toString().slice(-6)}`;
     const orderDetails = cart.map(item => `${item.name} (x${item.quantity})`).join(', ');
+    
+    const discountNote = appliedCoupon ? ` | Coupon: ${appliedCoupon.code} (-$${discountAmount.toFixed(2)})` : '';
 
     // 1. Submit to Sheet
     const orderData = {
@@ -126,7 +213,7 @@ const CartPage: React.FC = () => {
         'Message': `Order ID: ${orderId}. Address: ${address}, ${city}, ${zip}. 
                    Payment: ${paymentMethod.toUpperCase()} (${cardBrand.toUpperCase()} ending ${cardNumber.slice(-4)}). 
                    Order: ${orderDetails}. 
-                   Total: $${cartTotal.toFixed(2)}`
+                   Total: $${finalTotal.toFixed(2)}${discountNote}`
     };
 
     await submitToGoogleSheet('Services', orderData);
@@ -136,15 +223,30 @@ const CartPage: React.FC = () => {
       fullName,
       email,
       details: orderDetails,
-      total: `$${cartTotal.toFixed(2)}`,
+      total: `$${finalTotal.toFixed(2)}`,
       paymentMethod: paymentMethod === 'card' ? `Credit Card (${cardBrand.toUpperCase()})` : 'PayPal',
       orderId
     });
+
+    // 3. Save to Supabase (For "My Orders" history)
+    if (isAuthenticated && user) {
+        const { error } = await supabase.from('orders').insert([{
+            user_id: user.id,
+            items: cart, // Store full cart array including blurred items
+            total: finalTotal,
+            status: 'Paid'
+        }]);
+        if (error) {
+            console.error("Failed to save order to history:", error);
+        }
+    }
 
     setTimeout(() => {
         setIsProcessing(false);
         setOrderComplete(true);
         clearCart();
+        setAppliedCoupon(null);
+        setDiscountAmount(0);
     }, 2000); 
   };
 
@@ -163,9 +265,16 @@ const CartPage: React.FC = () => {
                        ✓ A confirmation email has been sent to {email}
                     </span>
                 </p>
-                <Link to="/" className="inline-flex items-center justify-center bg-spirit-900 text-white font-bold py-4 px-10 rounded-xl hover:bg-accent-600 transition shadow-lg w-full">
-                    Return Home
-                </Link>
+                <div className="flex flex-col gap-3">
+                    {isAuthenticated && (
+                        <Link to="/orders" className="inline-flex items-center justify-center bg-spirit-900 text-white font-bold py-4 px-10 rounded-xl hover:bg-accent-600 transition shadow-lg w-full">
+                            View My Orders
+                        </Link>
+                    )}
+                    <Link to="/" className="inline-flex items-center justify-center bg-white text-spirit-900 font-bold py-4 px-10 rounded-xl border-2 border-spirit-100 hover:bg-spirit-50 transition w-full">
+                        Return Home
+                    </Link>
+                </div>
             </div>
         </div>
     );
@@ -199,8 +308,12 @@ const CartPage: React.FC = () => {
                   // Cart Item List
                   cart.map((item) => (
                     <div key={item.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center gap-6 animate-fade-in">
-                      <div className="w-24 h-24 bg-spirit-50 rounded-xl overflow-hidden shrink-0">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      <div className="w-24 h-24 bg-spirit-50 rounded-xl overflow-hidden shrink-0 relative">
+                        <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className={`w-full h-full object-cover ${item.isBlurBeforeBuy ? 'blur-[2px]' : ''}`} 
+                        />
                       </div>
                       <div className="flex-grow">
                         <h3 className="font-serif font-bold text-lg text-spirit-900 mb-1">{item.name}</h3>
@@ -349,24 +462,67 @@ const CartPage: React.FC = () => {
                     </div>
                 )}
 
+                {/* Coupon Code Section */}
+                <div className="mb-6">
+                    {appliedCoupon ? (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex justify-between items-center animate-fade-in">
+                            <div className="flex items-center gap-2">
+                                <Ticket size={16} className="text-green-600" />
+                                <div>
+                                    <p className="text-xs font-bold text-green-800 uppercase tracking-wider">Coupon Applied</p>
+                                    <p className="text-sm font-bold text-green-700">{appliedCoupon.code}</p>
+                                </div>
+                            </div>
+                            <button onClick={removeCoupon} className="text-green-500 hover:text-red-500 transition">
+                                <X size={18} />
+                            </button>
+                        </div>
+                    ) : (
+                        <div>
+                            <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                                <div className="relative flex-grow">
+                                    <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Coupon Code" 
+                                        value={couponCode}
+                                        onChange={(e) => setCouponCode(e.target.value)}
+                                        className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-spirit-500 outline-none uppercase font-bold"
+                                    />
+                                </div>
+                                <button 
+                                    type="submit" 
+                                    disabled={!couponCode || isVerifyingCoupon}
+                                    className="bg-spirit-900 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-spirit-800 transition disabled:opacity-50"
+                                >
+                                    {isVerifyingCoupon ? <Loader2 className="animate-spin w-4 h-4" /> : 'Apply'}
+                                </button>
+                            </form>
+                            {couponError && <p className="text-xs text-red-500 mt-2 ml-1 font-bold">{couponError}</p>}
+                        </div>
+                    )}
+                </div>
+
                 <div className="space-y-3 mb-6 pb-6 border-b border-slate-100">
                     <div className="flex justify-between text-slate-600">
                         <span>Subtotal</span>
                         <span className="font-bold">${cartTotal.toFixed(2)}</span>
                     </div>
+                    {discountAmount > 0 && (
+                        <div className="flex justify-between text-green-600 animate-fade-in">
+                            <span className="flex items-center gap-1"><Ticket size={14}/> Discount</span>
+                            <span className="font-bold">-${discountAmount.toFixed(2)}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between text-slate-600">
                         <span>Shipping</span>
                         <span className="font-bold text-green-600">Free</span>
-                    </div>
-                    <div className="flex justify-between text-slate-600">
-                        <span>Taxes (Estimated)</span>
-                        <span className="font-bold">$0.00</span>
                     </div>
                 </div>
                 
                 <div className="flex justify-between text-xl font-bold text-spirit-900 mb-8">
                     <span>Total</span>
-                    <span>${cartTotal.toFixed(2)}</span>
+                    <span>${finalTotal.toFixed(2)}</span>
                 </div>
 
                 {!isAuthenticated ? (
@@ -399,7 +555,7 @@ const CartPage: React.FC = () => {
                             className="w-full bg-spirit-900 text-white font-bold py-4 rounded-xl hover:bg-spirit-800 transition shadow-lg flex items-center justify-center gap-2"
                         >
                             {isProcessing ? <Loader2 className="animate-spin" /> : <Lock size={18} />}
-                            {isProcessing ? 'Processing...' : `Pay $${cartTotal.toFixed(2)}`}
+                            {isProcessing ? 'Processing...' : `Pay $${finalTotal.toFixed(2)}`}
                         </button>
                         <button 
                             type="button" 

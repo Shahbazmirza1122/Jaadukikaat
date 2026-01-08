@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Heart, Search, Filter, ArrowRight, Loader2 } from 'lucide-react';
+import { ShoppingBag, Heart, Search, Filter, ArrowRight, Loader2, Tag, Lock } from 'lucide-react';
 import { products as staticProducts, Product } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../lib/supabase';
@@ -30,10 +30,23 @@ const StorePage: React.FC = () => {
         console.warn('Supabase error fetching products (falling back to static):', error.message || JSON.stringify(error));
         setProductsList(staticProducts);
       } else if (!data || data.length === 0) {
-        // Fallback if no data is found either
         setProductsList(staticProducts);
       } else {
-        setProductsList(data);
+        const mapped = data.map((p: any) => ({
+             id: p.id,
+             name: p.name,
+             price: p.price,
+             image: p.image,
+             category: p.category,
+             description: p.description,
+             sku: p.sku,
+             salePrice: p.sale_price,
+             saleStart: p.sale_start,
+             saleEnd: p.sale_end,
+             isOutOfStock: p.is_out_of_stock,
+             isBlurBeforeBuy: p.is_blur_before_buy
+        }));
+        setProductsList(mapped);
       }
     } catch (err) {
       console.error('Unexpected error fetching products:', err);
@@ -52,8 +65,20 @@ const StorePage: React.FC = () => {
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
     e.stopPropagation();
+    if (product.isOutOfStock) return;
     addToCart(product);
     alert(`${product.name} added to cart!`);
+  };
+
+  const isSaleActive = (product: Product) => {
+      if (!product.salePrice) return false;
+      const now = new Date();
+      const start = product.saleStart ? new Date(product.saleStart) : null;
+      const end = product.saleEnd ? new Date(product.saleEnd) : null;
+      
+      if (start && now < start) return false;
+      if (end && now > end) return false;
+      return true;
   };
 
   const categories = ['All', ...Array.from(new Set(productsList.map(p => p.category)))];
@@ -111,42 +136,88 @@ const StorePage: React.FC = () => {
              <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-spirit-500 w-10 h-10" /></div>
         ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in-up">
-            {filteredProducts.map(product => (
-              <Link to={`/product/${product.id}`} key={product.id} className="bg-white rounded-[2rem] p-4 shadow-lg hover:shadow-2xl transition-all duration-300 group border border-spirit-100 flex flex-col h-full">
-                {/* Image Area */}
-                <div className="h-72 rounded-3xl overflow-hidden mb-6 relative bg-spirit-50">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" />
-                    <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-900 shadow-sm">
-                        {product.category}
+            {filteredProducts.map(product => {
+                const onSale = isSaleActive(product);
+                const currentPrice = onSale ? product.salePrice : product.price;
+
+                return (
+                  <Link to={`/product/${product.id}`} key={product.id} className="bg-white rounded-[2rem] p-4 shadow-lg hover:shadow-2xl transition-all duration-300 group border border-spirit-100 flex flex-col h-full relative">
+                    {/* Image Area */}
+                    <div className="h-72 rounded-3xl overflow-hidden mb-6 relative bg-spirit-50">
+                        <img 
+                            src={product.image} 
+                            alt={product.name} 
+                            className={`w-full h-full object-cover transform group-hover:scale-110 transition duration-700 
+                                ${product.isOutOfStock ? 'grayscale opacity-70' : ''} 
+                                ${product.isBlurBeforeBuy ? 'blur-md scale-110' : ''}
+                            `} 
+                        />
+                        
+                        {/* Blur Overlay Label */}
+                        {product.isBlurBeforeBuy && !product.isOutOfStock && (
+                            <div className="absolute inset-0 flex items-center justify-center z-20">
+                                <div className="bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 text-white font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2">
+                                    <Lock size={12} /> Hidden Content
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Out of Stock Overlay */}
+                        {product.isOutOfStock && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
+                                <span className="bg-red-600 text-white px-4 py-2 rounded-full font-bold uppercase text-xs tracking-wider shadow-lg">Out of Stock</span>
+                            </div>
+                        )}
+
+                        <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-30">
+                            <span className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-900 shadow-sm">
+                                {product.category}
+                            </span>
+                            {onSale && !product.isOutOfStock && (
+                                <span className="bg-red-500 text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1">
+                                    <Tag size={10} /> Sale
+                                </span>
+                            )}
+                        </div>
+                        
+                        {/* Overlay Actions */}
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 z-10">
+                           <button 
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg ${wishlist.includes(product.id) ? 'bg-red-500 text-white' : 'bg-white text-slate-700 hover:text-red-500'}`}
+                            >
+                              <Heart size={20} className={wishlist.includes(product.id) ? 'fill-current' : ''} />
+                           </button>
+                        </div>
                     </div>
                     
-                    {/* Overlay Actions */}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                       <button 
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }}
-                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg ${wishlist.includes(product.id) ? 'bg-red-500 text-white' : 'bg-white text-slate-700 hover:text-red-500'}`}
-                        >
-                          <Heart size={20} className={wishlist.includes(product.id) ? 'fill-current' : ''} />
-                       </button>
+                    {/* Content Area */}
+                    <div className="px-2 pb-2 flex-grow flex flex-col">
+                        <h3 className="font-serif font-bold text-xl text-spirit-900 mb-2 truncate group-hover:text-accent-600 transition-colors" title={product.name}>{product.name}</h3>
+                        <p className="text-slate-500 text-sm mb-4 line-clamp-2">{product.description}</p>
+                        <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-50">
+                            <div className="flex flex-col">
+                                {onSale ? (
+                                    <>
+                                        <span className="text-red-600 font-bold text-xl">{currentPrice}</span>
+                                        <span className="text-slate-400 text-sm line-through decoration-slate-400">{product.price}</span>
+                                    </>
+                                ) : (
+                                    <span className="text-accent-600 font-bold text-xl">{product.price}</span>
+                                )}
+                            </div>
+                            <button 
+                                onClick={(e) => handleAddToCart(e, product)}
+                                disabled={!!product.isOutOfStock}
+                                className={`px-5 py-2.5 rounded-full flex items-center gap-2 transition-colors text-sm font-bold shadow-md active:scale-95 ${product.isOutOfStock ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-spirit-900 text-white hover:bg-accent-600'}`}
+                            >
+                                <ShoppingBag size={16} /> {product.isOutOfStock ? 'Sold Out' : 'Add'}
+                            </button>
+                        </div>
                     </div>
-                </div>
-                
-                {/* Content Area */}
-                <div className="px-2 pb-2 flex-grow flex flex-col">
-                    <h3 className="font-serif font-bold text-xl text-spirit-900 mb-2 truncate group-hover:text-accent-600 transition-colors" title={product.name}>{product.name}</h3>
-                    <p className="text-slate-500 text-sm mb-4 line-clamp-2">{product.description}</p>
-                    <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-50">
-                        <span className="text-accent-600 font-bold text-xl">{product.price}</span>
-                        <button 
-                            onClick={(e) => handleAddToCart(e, product)}
-                            className="px-5 py-2.5 rounded-full bg-spirit-900 text-white flex items-center gap-2 hover:bg-accent-600 transition-colors text-sm font-bold shadow-md active:scale-95"
-                        >
-                            <ShoppingBag size={16} /> Add
-                        </button>
-                    </div>
-                </div>
-              </Link>
-            ))}
+                  </Link>
+                );
+            })}
           </div>
         ) : (
           <div className="text-center py-20 bg-spirit-50 rounded-3xl animate-fade-in">
