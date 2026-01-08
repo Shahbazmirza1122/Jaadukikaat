@@ -2,27 +2,76 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Sun, ArrowRight, User, Lock, Mail } from 'lucide-react';
+import { Sun, ArrowRight, User, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would validate credentials with a backend here.
-    // For this demo, we simulate a successful login.
-    const displayName = name || email.split('@')[0];
-    login(displayName, email);
-    navigate(from, { replace: true });
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await login(email, password);
+        if (error) throw error;
+        navigate(from, { replace: true });
+      } else {
+        const { error } = await signup(name, email, password);
+        if (error) throw error;
+        
+        // Show verification popup on successful signup
+        setShowVerification(true);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An authentication error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleVerificationClose = () => {
+    setShowVerification(false);
+    setIsLogin(true); // Switch to login mode
+    setPassword(''); // Clear password for security
+  };
+
+  if (showVerification) {
+    return (
+      <div className="min-h-screen pt-24 pb-20 bg-spirit-50 flex items-center justify-center px-4 animate-fade-in">
+         <div className="bg-white p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-md border border-spirit-100 text-center relative animate-fade-in-up">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+               <Mail className="w-10 h-10 text-green-600" />
+            </div>
+            <h2 className="text-3xl font-serif font-bold text-spirit-900 mb-4">Check Your Email</h2>
+            <p className="text-slate-600 mb-8 leading-relaxed">
+               We have sent a confirmation link to <span className="font-bold text-spirit-900 block mt-1">{email}</span>
+               <span className="block mt-4 text-sm">Please verify your email address to complete your registration and access the sanctuary.</span>
+            </p>
+            <button 
+              onClick={handleVerificationClose}
+              className="w-full bg-spirit-900 text-white font-bold py-4 rounded-xl hover:bg-spirit-800 transition shadow-lg flex items-center justify-center gap-2"
+            >
+               <span>Return to Login</span>
+               <ArrowRight className="w-4 h-4" />
+            </button>
+         </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-24 pb-20 bg-spirit-50 flex items-center justify-center px-4">
@@ -39,6 +88,13 @@ const LoginPage: React.FC = () => {
              {isLogin ? 'Sign in to continue your spiritual journey.' : 'Create an account to track your orders and requests.'}
            </p>
         </div>
+
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl flex items-start gap-3 text-sm">
+             <AlertCircle className="w-5 h-5 shrink-0" />
+             <span>{error}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
@@ -81,10 +137,20 @@ const LoginPage: React.FC = () => {
 
           <button 
             type="submit" 
-            className="w-full bg-spirit-900 text-white font-bold py-4 rounded-xl hover:bg-accent-600 transition shadow-lg flex items-center justify-center gap-2 mt-4 group"
+            disabled={isLoading}
+            className="w-full bg-spirit-900 text-white font-bold py-4 rounded-xl hover:bg-accent-600 transition shadow-lg flex items-center justify-center gap-2 mt-4 group disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
           </button>
         </form>
 
@@ -92,7 +158,10 @@ const LoginPage: React.FC = () => {
           <p className="text-slate-500 text-sm">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button 
-              onClick={() => setIsLogin(!isLogin)} 
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError(null);
+              }} 
               className="text-accent-600 font-bold hover:underline"
             >
               {isLogin ? 'Sign Up' : 'Log In'}

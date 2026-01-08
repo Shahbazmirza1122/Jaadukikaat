@@ -1,9 +1,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Heart, Star, Check, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
-import { products, Product } from '../data/products';
+import { ArrowLeft, ShoppingBag, Heart, Star, Check, ShieldCheck, Truck, RotateCcw, Loader2 } from 'lucide-react';
+import { products as staticProducts, Product } from '../data/products';
 import { useCart } from '../context/CartContext';
+import { supabase } from '../lib/supabase';
 
 const ProductPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,15 +12,41 @@ const ProductPage: React.FC = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const found = products.find(p => p.id === id);
-    if (found) {
-      setProduct(found);
-    } else {
-      navigate('/');
-    }
+    const fetchProduct = async () => {
+      if (!id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (error || !data) {
+          // Fallback to static data
+          const found = staticProducts.find(p => p.id === id);
+          if (found) {
+             setProduct(found);
+          } else {
+             navigate('/store'); // Redirect if not found
+          }
+        } else {
+          setProduct(data);
+        }
+      } catch (err) {
+        // Fallback
+        const found = staticProducts.find(p => p.id === id);
+        if (found) setProduct(found);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProduct();
   }, [id, navigate]);
 
   const handleAddToCart = () => {
@@ -28,6 +55,14 @@ const ProductPage: React.FC = () => {
       alert(`${product.name} added to cart!`);
     }
   };
+
+  if (isLoading) {
+    return (
+        <div className="min-h-screen pt-24 flex justify-center">
+            <Loader2 className="animate-spin w-10 h-10 text-spirit-500" />
+        </div>
+    );
+  }
 
   if (!product) return null;
 

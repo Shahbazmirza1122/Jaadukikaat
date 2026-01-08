@@ -49,8 +49,8 @@ const Header: React.FC = () => {
     setIsOpen(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     setUserMenuOpen(false);
     navigate('/');
   };
@@ -59,7 +59,7 @@ const Header: React.FC = () => {
     <div className="fixed w-full z-50 flex flex-col transition-all duration-300">
       {/* Primary Navigation Bar */}
       <header 
-        className={`w-full transition-all duration-300 border-b ${
+        className={`relative z-[60] w-full transition-all duration-300 border-b ${
           scrolled 
             ? 'bg-white/98 backdrop-blur-md shadow-lg py-2 border-slate-100' 
             : 'bg-spirit-900/85 backdrop-blur-md py-4 border-white/5'
@@ -109,29 +109,45 @@ const Header: React.FC = () => {
                   </Link>
 
                   {/* Auth Menu (Desktop) */}
-                  {isAuthenticated ? (
+                  {isAuthenticated && user ? (
                     <div className="relative">
                       <button 
                         onClick={() => setUserMenuOpen(!userMenuOpen)}
-                        className={`flex items-center gap-2 font-bold text-sm ${scrolled ? 'text-spirit-900' : 'text-white'}`}
+                        className={`flex items-center gap-2 font-bold text-sm transition-transform ${userMenuOpen ? 'scale-110' : ''} ${scrolled ? 'text-spirit-900' : 'text-white'}`}
                       >
-                         <div className="w-8 h-8 rounded-full bg-accent-500 flex items-center justify-center text-white">
-                            {user?.name.charAt(0).toUpperCase()}
+                         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white border-2 transition-colors ${userMenuOpen ? 'border-accent-300 bg-accent-600' : 'border-transparent bg-accent-500'}`}>
+                            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                          </div>
                       </button>
+                      
+                      {/* Dropdown Menu */}
                       {userMenuOpen && (
-                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden animate-fade-in">
-                            <div className="px-4 py-3 border-b border-slate-50">
-                               <p className="text-sm font-bold text-spirit-900 truncate">{user?.name}</p>
-                               <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-                            </div>
-                            <button 
-                              onClick={handleLogout}
-                              className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"
-                            >
-                               <LogOut size={14} /> Logout
-                            </button>
-                         </div>
+                         <>
+                           <div className="fixed inset-0 z-[90]" onClick={() => setUserMenuOpen(false)} />
+                           <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-slate-100 overflow-hidden animate-fade-in z-[100] origin-top-right ring-1 ring-black/5">
+                              <div className="px-5 py-4 border-b border-slate-50 bg-slate-50/50">
+                                 <p className="text-sm font-bold text-spirit-900 truncate">{user.name}</p>
+                                 <p className="text-xs text-slate-500 truncate mt-0.5">{user.email}</p>
+                              </div>
+                              <div className="p-2">
+                                <Link 
+                                  to="/cart" 
+                                  onClick={() => setUserMenuOpen(false)}
+                                  className="w-full text-left px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-spirit-900 rounded-xl flex items-center gap-3 transition-colors font-medium mb-1"
+                                >
+                                   <ShoppingCart size={16} /> 
+                                   <span>My Orders</span>
+                                </Link>
+                                <button 
+                                  onClick={handleLogout}
+                                  className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50 hover:text-red-700 rounded-xl flex items-center gap-3 transition-colors font-medium"
+                                >
+                                   <LogOut size={16} /> 
+                                   <span>Sign Out</span>
+                                </button>
+                              </div>
+                           </div>
+                         </>
                       )}
                     </div>
                   ) : (
@@ -203,14 +219,14 @@ const Header: React.FC = () => {
                     </div>
                   </Link>
 
-                  {isAuthenticated ? (
+                  {isAuthenticated && user ? (
                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                            <div className="w-10 h-10 rounded-full bg-accent-500 flex items-center justify-center text-white font-bold">
-                              {user?.name.charAt(0).toUpperCase()}
+                              {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                            </div>
                            <div>
-                               <p className="font-bold text-spirit-900">{user?.name}</p>
+                               <p className="font-bold text-spirit-900">{user.name}</p>
                                <p className="text-xs text-slate-500">Logged In</p>
                            </div>
                         </div>

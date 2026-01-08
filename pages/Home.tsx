@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Sun, ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Mail, Phone, User, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, MapPin, Globe, Users, MessageSquare, Check, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { BlogPost } from '../types';
-import { products, Product } from '../data/products';
+import { products as staticProducts, Product } from '../data/products';
 import { submitToGoogleSheet } from '../services/sheetService';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
@@ -11,6 +11,7 @@ import { useCart } from '../context/CartContext';
 const Home: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [productsList, setProductsList] = useState<Product[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -32,6 +33,41 @@ const Home: React.FC = () => {
         window.scrollTo(0, 0);
     }
   }, [location.hash]);
+
+  // Fetch Data
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      const { data } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        setBlogPosts(data.map((p: any) => ({
+          ...p,
+          imageUrl: p.image_url || p.imageUrl,
+          relatedIds: p.related_ids || p.relatedIds
+        })));
+      }
+    };
+
+    const fetchProducts = async () => {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error || !data || data.length === 0) {
+            setProductsList(staticProducts);
+        } else {
+            setProductsList(data);
+        }
+    };
+
+    fetchBlogs();
+    fetchProducts();
+  }, []);
 
   // Donation State
   const [donationAmount, setDonationAmount] = useState<string>('5');
@@ -159,25 +195,6 @@ const Home: React.FC = () => {
     return () => clearInterval(timer);
   }, [slides.length]);
 
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      const { data } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false });
-
-      if (data) {
-        setBlogPosts(data.map((p: any) => ({
-          ...p,
-          imageUrl: p.image_url || p.imageUrl,
-          relatedIds: p.related_ids || p.relatedIds
-        })));
-      }
-    };
-
-    fetchBlogs();
-  }, []);
 
   const scrollProducts = (direction: 'left' | 'right') => {
     if (productScrollRef.current) {
@@ -492,7 +509,7 @@ const Home: React.FC = () => {
                 className="flex gap-8 overflow-x-auto pb-8 snap-x mandatory hide-scrollbar"
                 style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-                {products.map(product => (
+                {productsList.map(product => (
                     <Link to={`/product/${product.id}`} key={product.id} className="min-w-[280px] md:min-w-[320px] bg-white rounded-3xl p-4 shadow-lg hover:shadow-2xl transition-all duration-300 group snap-center border border-spirit-100 flex-shrink-0 flex flex-col cursor-pointer relative">
                         {/* Image Area */}
                         <div className="h-72 rounded-2xl overflow-hidden mb-6 relative">
@@ -531,13 +548,23 @@ const Home: React.FC = () => {
                 {/* Add a spacer at the end for better scrolling feel */}
                 <div className="min-w-[20px]"></div>
             </div>
+
+            {/* Visit Store Button */}
+            <div className="mt-10 flex justify-center">
+                 <Link to="/store" className="inline-flex items-center justify-center bg-spirit-900 text-white font-bold py-4 px-10 rounded-full shadow-lg hover:bg-spirit-800 transition-all hover:scale-105 active:scale-95 group">
+                      <span>Visit Sacred Store</span>
+                      <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                 </Link>
+            </div>
         </div>
       </section>
       
-      {/* ... Rest of existing Home.tsx content (About, Donation, Services, etc) ... */}
+      {/* ... (Rest of the file remains unchanged) ... */}
+      
       {/* About Section */}
       <section id="about" className="py-32 bg-white">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+        {/* ... */}
+         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           <div className="relative group/aboutImg">
             <div className="absolute -top-6 -left-6 w-32 h-32 bg-accent-50 rounded-full -z-10 animate-pulse"></div>
             <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1767284640/Rohaniyat_l4p17j.webp" alt="Meditation" className="rounded-[3rem] shadow-2xl h-[550px] w-full object-cover transition-transform duration-700 group-hover/aboutImg:scale-[1.02]" />

@@ -1,16 +1,17 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, LayoutDashboard, PenTool, LogOut, Save, Trash2, Plus, CircleCheck, Pencil, Eye, EyeOff, ArrowLeft, Image as ImageIcon, SquareCheck, ScrollText, Loader2 } from 'lucide-react';
+import { Lock, LayoutDashboard, PenTool, LogOut, Save, Trash2, Plus, CircleCheck, Pencil, Eye, EyeOff, ArrowLeft, Image as ImageIcon, SquareCheck, ScrollText, Loader2, ShoppingBag, X } from 'lucide-react';
 import { BlogPost } from '../types';
 import RichTextEditor from '../components/RichTextEditor';
 import { supabase } from '../lib/supabase';
+import { Product } from '../data/products';
 
 const Admin: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'blog' | 'duaa'>('blog');
+  const [activeTab, setActiveTab] = useState<'blog' | 'duaa' | 'products'>('blog');
 
   // Blog State
   const [blogView, setBlogView] = useState<'list' | 'form'>('list');
@@ -18,11 +19,23 @@ const Admin: React.FC = () => {
   
   // Duaa State
   const [dailyDuaa, setDailyDuaa] = useState('');
+
+  // Product State
+  const [productView, setProductView] = useState<'list' | 'form'>('list');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [editProductId, setEditProductId] = useState<string | null>(null);
+  const [productForm, setProductForm] = useState<Omit<Product, 'id'>>({
+    name: '',
+    price: '',
+    image: '',
+    category: '',
+    description: ''
+  });
   
   // Loading States
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form State
+  // Blog Form State
   const [editId, setEditId] = useState<string | null>(null);
   const [blogTitle, setBlogTitle] = useState('');
   const [blogExcerpt, setBlogExcerpt] = useState('');
@@ -40,14 +53,14 @@ const Admin: React.FC = () => {
   // Initialize Data from Supabase
   useEffect(() => {
     if (isAuthenticated) {
-        fetchPosts();
-        fetchDuaa();
+        if (activeTab === 'blog') fetchPosts();
+        if (activeTab === 'duaa') fetchDuaa();
+        if (activeTab === 'products') fetchProducts();
     }
   }, [isAuthenticated, activeTab]);
 
   const fetchPosts = async () => {
     setIsLoading(true);
-    // Assuming table 'posts' matches BlogPost structure but snake_case
     const { data, error } = await supabase
         .from('posts')
         .select('*')
@@ -56,7 +69,6 @@ const Admin: React.FC = () => {
     if (error) {
         console.error('Error fetching posts:', JSON.stringify(error, null, 2));
     } else {
-        // Map snake_case to camelCase if needed, or rely on consistency
         const mappedPosts = (data || []).map((p: any) => ({
             ...p,
             imageUrl: p.image_url || p.imageUrl,
@@ -68,8 +80,22 @@ const Admin: React.FC = () => {
     setIsLoading(false);
   };
 
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching products:', error);
+    } else {
+      setProducts(data || []);
+    }
+    setIsLoading(false);
+  };
+
   const fetchDuaa = () => {
-      // Duaa is simple preference, keep in localStorage or could move to a 'settings' table
       const stored = localStorage.getItem('lumina_daily_duaa');
       if (stored) setDailyDuaa(stored);
   };
@@ -135,7 +161,6 @@ const Admin: React.FC = () => {
         const { error } = await supabase.from('posts').delete().eq('id', id);
         if (error) {
             alert('Error deleting post');
-            console.error(JSON.stringify(error, null, 2));
         } else {
             setPosts(posts.filter(p => p.id !== id));
             setNotification('Article deleted successfully.');
@@ -157,7 +182,6 @@ const Admin: React.FC = () => {
 
     if (error) {
         alert('Error updating status');
-        console.error(JSON.stringify(error, null, 2));
     } else {
         setPosts(posts.map(p => p.id === id ? { ...p, status: newStatus } : p));
     }
@@ -174,7 +198,6 @@ const Admin: React.FC = () => {
     
     const finalCategory = newCategoryInput.trim() || blogCategory || 'Uncategorized';
     
-    // Prepare payload for Supabase (snake_case columns)
     const postPayload = {
         title: blogTitle,
         excerpt: blogExcerpt,
@@ -209,7 +232,6 @@ const Admin: React.FC = () => {
         return;
     }
     
-    // Refresh list
     await fetchPosts();
     
     setTimeout(() => {
@@ -222,6 +244,83 @@ const Admin: React.FC = () => {
       localStorage.setItem('lumina_daily_duaa', dailyDuaa);
       setNotification('Daily Duaa updated successfully!');
       setTimeout(() => setNotification(null), 3000);
+  };
+
+  // --- PRODUCT HANDLERS ---
+  const resetProductForm = () => {
+    setEditProductId(null);
+    setProductForm({ name: '', price: '', image: '', category: '', description: '' });
+  };
+
+  const handleSwitchToProductCreate = () => {
+    resetProductForm();
+    setProductView('form');
+  };
+
+  const handleSwitchToProductList = () => {
+    resetProductForm();
+    setProductView('list');
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditProductId(product.id);
+    setProductForm({
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      category: product.category,
+      description: product.description || ''
+    });
+    setProductView('form');
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) {
+        alert('Error deleting product');
+      } else {
+        setProducts(products.filter(p => p.id !== id));
+        setNotification('Product deleted successfully.');
+        setTimeout(() => setNotification(null), 3000);
+      }
+    }
+  };
+
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const payload = {
+      name: productForm.name,
+      price: productForm.price,
+      image: productForm.image,
+      category: productForm.category,
+      description: productForm.description
+    };
+
+    let error;
+    if (editProductId) {
+      const { error: updateError } = await supabase.from('products').update(payload).eq('id', editProductId);
+      error = updateError;
+      setNotification('Product updated successfully!');
+    } else {
+      const { error: insertError } = await supabase.from('products').insert([payload]);
+      error = insertError;
+      setNotification('Product created successfully!');
+    }
+
+    if (error) {
+      console.error(error);
+      alert('Failed to save product.');
+    } else {
+      await fetchProducts();
+      setTimeout(() => {
+        setNotification(null);
+        handleSwitchToProductList();
+      }, 1000);
+    }
+    setIsLoading(false);
   };
 
   if (!isAuthenticated) {
@@ -287,6 +386,13 @@ const Admin: React.FC = () => {
             >
               <PenTool size={20} />
               <span>Manage Blog</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('products')}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${activeTab === 'products' ? 'bg-spirit-700 text-white' : 'text-spirit-200 hover:bg-spirit-800'}`}
+            >
+              <ShoppingBag size={20} />
+              <span>Manage Products</span>
             </button>
             <button 
               onClick={() => setActiveTab('duaa')}
@@ -365,6 +471,196 @@ const Admin: React.FC = () => {
                     </div>
                 </div>
             </div>
+        )}
+
+        {/* PRODUCTS TAB */}
+        {activeTab === 'products' && (
+          <div className="max-w-6xl mx-auto">
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+              <div>
+                <h1 className="text-3xl font-serif font-bold text-gray-800">
+                  {productView === 'list' ? 'All Products' : (editProductId ? 'Edit Product' : 'Add New Product')}
+                </h1>
+                <p className="text-gray-500 text-sm mt-1">
+                  {productView === 'list' ? 'Manage your store inventory.' : 'Add items to the Sacred Store.'}
+                </p>
+              </div>
+
+              {productView === 'list' ? (
+                 <button 
+                  onClick={handleSwitchToProductCreate}
+                  className="bg-spirit-600 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-spirit-700 transition shadow-md flex items-center"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  New Product
+                </button>
+              ) : (
+                <button 
+                  onClick={handleSwitchToProductList}
+                  className="bg-white text-gray-600 font-bold py-2.5 px-6 rounded-lg border border-gray-200 hover:bg-gray-50 transition flex items-center"
+                >
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                  Back to List
+                </button>
+              )}
+            </div>
+
+            {/* PRODUCT LIST */}
+            {productView === 'list' && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-50 border-b border-gray-100">
+                      <tr>
+                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider w-20">Image</th>
+                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Product Name</th>
+                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Category</th>
+                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider">Price</th>
+                        <th className="px-6 py-4 font-bold text-gray-700 text-sm uppercase tracking-wider text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {isLoading ? (
+                           <tr><td colSpan={5} className="text-center py-8"><Loader2 className="animate-spin w-6 h-6 mx-auto text-spirit-500"/></td></tr>
+                      ) : products.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                            No products found. Click "New Product" to add one.
+                          </td>
+                        </tr>
+                      ) : (
+                        products.map((product) => (
+                          <tr key={product.id} className="hover:bg-gray-50 transition group">
+                            <td className="px-6 py-4">
+                              <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                                {product.image ? (
+                                  <img src={product.image} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <ImageIcon className="w-6 h-6 m-3 text-gray-300" />
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 font-bold text-gray-900">{product.name}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600">{product.category}</td>
+                            <td className="px-6 py-4 text-sm font-bold text-spirit-600">{product.price}</td>
+                            <td className="px-6 py-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end space-x-2">
+                                <button 
+                                  onClick={() => handleEditProduct(product)}
+                                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition"
+                                  title="Edit"
+                                >
+                                  <Pencil size={18} />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition"
+                                  title="Delete"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* PRODUCT FORM */}
+            {productView === 'form' && (
+              <form onSubmit={handleSaveProduct} className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 space-y-8 animate-fade-in">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Product Name</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={productForm.name}
+                        onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none"
+                        placeholder="e.g. Yemeni Aqeeq Ring"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Price</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={productForm.price}
+                        onChange={(e) => setProductForm({...productForm, price: e.target.value})}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none"
+                        placeholder="e.g. $85.00"
+                      />
+                    </div>
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={productForm.category}
+                        onChange={(e) => setProductForm({...productForm, category: e.target.value})}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none"
+                        placeholder="e.g. Gemstones, Accessories"
+                      />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Image URL</label>
+                        <div className="flex gap-2">
+                            <input 
+                                type="text" 
+                                required
+                                value={productForm.image}
+                                onChange={(e) => setProductForm({...productForm, image: e.target.value})}
+                                className="flex-1 px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none"
+                                placeholder="https://..."
+                            />
+                            {productForm.image && (
+                                <div className="w-12 h-12 rounded overflow-hidden border border-gray-200 shrink-0">
+                                    <img src={productForm.image} alt="Preview" className="w-full h-full object-cover" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                 </div>
+
+                 <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
+                    <textarea 
+                        rows={4}
+                        value={productForm.description}
+                        onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-spirit-500 outline-none resize-none"
+                        placeholder="Detailed product description..."
+                    />
+                 </div>
+
+                 <div className="flex justify-end pt-4 border-t border-gray-100">
+                    <button 
+                        type="button"
+                        onClick={handleSwitchToProductList}
+                        className="mr-4 text-gray-500 font-bold px-6 py-3 hover:text-gray-700 transition"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit"
+                        disabled={isLoading}
+                        className="bg-spirit-900 text-white font-bold px-8 py-3 rounded-lg hover:bg-spirit-800 transition shadow-lg flex items-center"
+                    >
+                        {isLoading ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <Save className="w-5 h-5 mr-2" />}
+                        {editProductId ? 'Update Product' : 'Create Product'}
+                    </button>
+                </div>
+              </form>
+            )}
+          </div>
         )}
 
         {/* BLOG TAB */}

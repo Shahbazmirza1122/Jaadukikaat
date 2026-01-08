@@ -11,6 +11,7 @@ import Admin from './pages/Admin';
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
 import LoginPage from './pages/LoginPage';
+import StorePage from './pages/StorePage';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 
@@ -27,6 +28,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/services" element={<ServicesPage />} />
+          <Route path="/store" element={<StorePage />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:id" element={<BlogPostPage />} />
           <Route path="/product/:id" element={<ProductPage />} />
