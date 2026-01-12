@@ -100,10 +100,16 @@ const Home: React.FC = () => {
   const [isConsultModalOpen, setIsConsultModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [consultService, setConsultService] = useState('');
+  
+  // Updated Consult Form Fields
   const [consultName, setConsultName] = useState('');
-  const [consultFatherName, setConsultFatherName] = useState('');
-  const [consultEmail, setConsultEmail] = useState('');
+  const [consultMotherName, setConsultMotherName] = useState('');
+  const [consultDob, setConsultDob] = useState('');
   const [consultPhone, setConsultPhone] = useState('');
+  const [consultEmail, setConsultEmail] = useState('');
+  const [consultCity, setConsultCity] = useState('');
+  const [consultCountry, setConsultCountry] = useState('');
+  const [consultPurpose, setConsultPurpose] = useState('');
   const [consultMessage, setConsultMessage] = useState('');
   const [isConsultSubmitting, setIsConsultSubmitting] = useState(false);
 
@@ -140,8 +146,10 @@ const Home: React.FC = () => {
   const [prayerRequestPhone, setPrayerRequestPhone] = useState('');
   const [prayerRequestCity, setPrayerRequestCity] = useState('');
   const [prayerRequestCountry, setPrayerRequestCountry] = useState('');
-  const [prayerRequestPurpose, setPrayerRequestPurpose] = useState('');
   const [prayerRequestRecitation, setPrayerRequestRecitation] = useState('');
+  const [prayerRequestRecitationCount, setPrayerRequestRecitationCount] = useState('');
+  const [prayerRequestPurpose, setPrayerRequestPurpose] = useState('');
+  const [prayerRequestMessage, setPrayerRequestMessage] = useState('');
 
   // General Contact Form State
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
@@ -294,7 +302,8 @@ const Home: React.FC = () => {
         'Message': `Donation Amount: $${customDonation || donationAmount}, Card Brand: ${cardBrand}`,
     };
 
-    await submitToGoogleSheet('Services', donationData);
+    // Send to "Donations" sheet
+    await submitToGoogleSheet('Donations', donationData);
 
     setTimeout(() => {
         setIsProcessing(false);
@@ -318,23 +327,40 @@ const Home: React.FC = () => {
     e.preventDefault();
     setIsConsultSubmitting(true);
     
-    await submitToGoogleSheet('Services', {
+    // Explicit mapping to Google Sheet columns
+    const payload = {
         'Full Name': consultName,
-        "Father's Name": consultFatherName,
-        'Email Address': consultEmail,
+        "Mother's Name": consultMotherName,
+        'Date of Birth': consultDob,
         'Phone Number': consultPhone,
+        'Email Address': consultEmail,
+        'City': consultCity,
+        'Country': consultCountry,
+        'Purpose': consultPurpose,
         'Requesting Service': consultService,
         'Message': consultMessage
-    });
+    };
+
+    // Use the Service Name as the Sheet Name (e.g. "Dua", "Wazaif", etc.)
+    const targetSheet = consultService || 'Consultations';
+
+    console.log(`Sending to sheet: ${targetSheet}`, payload);
+
+    await submitToGoogleSheet(targetSheet, payload);
 
     setIsConsultSubmitting(false);
     setIsConsultModalOpen(false);
     setIsSuccessModalOpen(true);
     
+    // Reset fields
     setConsultName('');
-    setConsultFatherName('');
-    setConsultEmail('');
+    setConsultMotherName('');
+    setConsultDob('');
     setConsultPhone('');
+    setConsultEmail('');
+    setConsultCity('');
+    setConsultCountry('');
+    setConsultPurpose('');
     setConsultMessage('');
   };
 
@@ -402,20 +428,28 @@ const Home: React.FC = () => {
     setIsmeAzamMessage('');
   };
 
-  // Prayer Request Handler
+  // Prayer Request Handler (FIXED)
   const handlePrayerRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsConsultSubmitting(true);
     
-    const fullDetails = `Mother Name: ${prayerRequestMotherName}\nDOB: ${prayerRequestDob}\nLocation: ${prayerRequestCity}, ${prayerRequestCountry}\nPurpose: ${prayerRequestPurpose}\nRecitation: ${prayerRequestRecitation}`;
-
-    await submitToGoogleSheet('Services', {
+    const payload = {
         'Full Name': prayerRequestName,
-        'Email Address': prayerRequestEmail,
+        "Mother's Name": prayerRequestMotherName,
+        'Date of Birth': prayerRequestDob,
         'Phone Number': prayerRequestPhone,
-        'Requesting Service': 'Prayer Request',
-        'Message': fullDetails
-    });
+        'Email Address': prayerRequestEmail,
+        'City': prayerRequestCity,
+        'Country': prayerRequestCountry,
+        'What You Have Recited': prayerRequestRecitation, // Correct key for Sheet
+        'How Many Times': prayerRequestRecitationCount,   // Correct key for Sheet
+        'Purpose': prayerRequestPurpose,
+        'Message': prayerRequestMessage,
+        'Requesting Service': 'Prayer Request'
+    };
+
+    // Send to "Prayer Requests" sheet
+    await submitToGoogleSheet('Prayer Requests', payload);
 
     setIsConsultSubmitting(false);
     setIsPrayerRequestModalOpen(false);
@@ -428,8 +462,10 @@ const Home: React.FC = () => {
     setPrayerRequestPhone('');
     setPrayerRequestCity('');
     setPrayerRequestCountry('');
-    setPrayerRequestPurpose('');
     setPrayerRequestRecitation('');
+    setPrayerRequestRecitationCount('');
+    setPrayerRequestPurpose('');
+    setPrayerRequestMessage('');
   };
 
   // General Contact Handler
@@ -474,7 +510,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="w-full overflow-x-hidden relative bg-white">
-      {/* ... Hero Section remains unchanged ... */}
+      {/* Hero Section */}
       <section id="top" className="relative h-[85vh] md:h-screen overflow-hidden bg-spirit-900">
         {slides.map((slide, index) => (
           <div key={index} className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
@@ -630,11 +666,9 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Rest of the file remains unchanged... */}
+      {/* About Section */}
       <section id="about" className="py-32 bg-white">
-        {/* ... */}
          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          {/* ... (rest of about section) ... */}
           <div className="relative group/aboutImg">
             <div className="absolute -top-6 -left-6 w-32 h-32 bg-accent-50 rounded-full -z-10 animate-pulse"></div>
             <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1767284640/Rohaniyat_l4p17j.webp" alt="Meditation" className="rounded-[3rem] shadow-2xl h-[550px] w-full object-cover transition-transform duration-700 group-hover/aboutImg:scale-[1.02]" />
@@ -655,16 +689,13 @@ const Home: React.FC = () => {
         </div>
       </section>
       
-      {/* ... Rest of existing sections and modals (Donation, Services, Prayer, Modals) ... */}
-      {/* ... Using previous code for the remaining sections ... */}
+      {/* Donation Section */}
       <section className="py-24 bg-spirit-900 relative overflow-hidden border-t border-white/5">
-        {/* ... Donation section content from previous file ... */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent-500/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
             <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-accent-500/10 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/3"></div>
         </div>
         <div className="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* ... Donation content ... */}
             <div className="animate-fade-in-up">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-400 text-xs font-bold uppercase tracking-widest mb-8">
                     <Heart size={14} className="fill-current animate-pulse" />
@@ -699,7 +730,6 @@ const Home: React.FC = () => {
             </div>
 
             <div className="relative group">
-                {/* ... Donation form ... */}
                 <div className="absolute -inset-1 bg-gradient-to-br from-accent-500 to-spirit-700 rounded-[2.5rem] blur opacity-40 group-hover:opacity-60 transition duration-1000"></div>
                 <div className="relative bg-spirit-800/50 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 md:p-10 shadow-2xl">
                     <div className="text-center mb-8">
@@ -784,7 +814,6 @@ const Home: React.FC = () => {
 
       {/* Collective Prayer Section */}
       <section className="py-24 relative overflow-hidden bg-slate-950">
-        {/* ... */}
         <div className="absolute inset-0 z-0">
             <img 
                 src="https://images.unsplash.com/photo-1565552629477-ff14d8db1922?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" 
@@ -821,7 +850,6 @@ const Home: React.FC = () => {
 
       {/* Online Istikhara Section */}
       <section className="py-24 bg-white relative overflow-hidden">
-        {/* ... */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-accent-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2"></div>
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="animate-fade-in-up">
@@ -860,7 +888,6 @@ const Home: React.FC = () => {
 
       {/* Get Ism-e-Azam Section */}
       <section className="py-24 bg-slate-50 relative overflow-hidden">
-         {/* ... */}
          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white group order-last lg:order-first">
                 <img 
@@ -931,10 +958,9 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ... MODALS (Donation, Consult, etc. - Kept exactly as they were in the previous file version, omitted here for brevity as they are unchanged) ... */}
+      {/* Donation Modal */}
       {isDonationModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
-          {/* ... modal content ... */}
           <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsDonationModalOpen(false)}></div>
           <div className="bg-white rounded-3xl w-full max-w-md relative z-10 shadow-2xl overflow-hidden animate-fade-in-up border border-slate-100 max-h-[90vh] flex flex-col">
             <div className="bg-spirit-900 px-6 py-4 flex justify-between items-center shrink-0">
@@ -988,14 +1014,27 @@ const Home: React.FC = () => {
             <div className="bg-spirit-900 px-6 py-4 flex justify-between items-center shrink-0">
               <div>
                 <h3 className="text-lg font-serif font-bold text-white flex items-center"><FileText className="w-4 h-4 mr-2 text-accent-500" /> Consultation Request</h3>
+                {consultService && <p className="text-xs text-slate-300 mt-1">Service: {consultService}</p>}
               </div>
               <button onClick={() => setIsConsultModalOpen(false)} className="text-slate-400 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-1.5 rounded-full"><X size={18} /></button>
             </div>
             <div className="p-6 overflow-y-auto custom-scrollbar">
               <form onSubmit={handleConsultSubmit} className="space-y-4">
                 <input type="text" required placeholder="Full Name" value={consultName} onChange={(e) => setConsultName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                <input type="text" required placeholder="Mother's Name" value={consultMotherName} onChange={(e) => setConsultMotherName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                <input type="date" required placeholder="Date of Birth" value={consultDob} onChange={(e) => setConsultDob(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-600" />
+                <input type="tel" required placeholder="Phone Number" value={consultPhone} onChange={(e) => setConsultPhone(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
                 <input type="email" required placeholder="Email Address" value={consultEmail} onChange={(e) => setConsultEmail(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
-                <textarea required rows={4} placeholder="Describe your situation..." value={consultMessage} onChange={(e) => setConsultMessage(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none"></textarea>
+                
+                <div className="grid grid-cols-2 gap-4">
+                     <input type="text" required placeholder="City" value={consultCity} onChange={(e) => setConsultCity(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                     <input type="text" required placeholder="Country" value={consultCountry} onChange={(e) => setConsultCountry(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                </div>
+
+                <input type="text" required placeholder="Purpose of Consultation" value={consultPurpose} onChange={(e) => setConsultPurpose(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                
+                <textarea required rows={4} placeholder="Detailed Message / Situation..." value={consultMessage} onChange={(e) => setConsultMessage(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none"></textarea>
+                
                 <button type="submit" disabled={isConsultSubmitting} className="w-full bg-accent-500 text-white font-bold py-4 rounded-xl mt-2 flex items-center justify-center gap-2">
                   {isConsultSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : <Send size={18} />}
                   <span>Submit Request</span>
@@ -1006,7 +1045,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Istikhara, Ism-e-Azam, Prayer, Contact Modals - (Kept same logic, just placeholder comments to keep file size manageable while ensuring functionality remains) */}
+      {/* Istikhara, Ism-e-Azam, Prayer, Contact Modals */}
       {isIstikharaModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsIstikharaModalOpen(false)}></div>
@@ -1038,16 +1077,46 @@ const Home: React.FC = () => {
       )}
 
       {isPrayerRequestModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsPrayerRequestModalOpen(false)}></div>
-           <div className="bg-white rounded-3xl w-full max-w-lg relative z-10 p-6">
-                <button onClick={() => setIsPrayerRequestModalOpen(false)} className="absolute top-4 right-4"><X /></button>
-                <h3 className="text-xl font-serif font-bold mb-4">Prayer Request</h3>
-                <form onSubmit={handlePrayerRequestSubmit} className="space-y-3">
-                    <input className="w-full p-3 border rounded-lg" placeholder="Name" value={prayerRequestName} onChange={e=>setPrayerRequestName(e.target.value)} required />
-                    <textarea className="w-full p-3 border rounded-lg" placeholder="Duaa" value={prayerRequestPurpose} onChange={e=>setPrayerRequestPurpose(e.target.value)} required />
-                    <button className="w-full bg-spirit-900 text-white py-3 rounded-lg">Send Duaa</button>
-                </form>
+           <div className="bg-white rounded-3xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-fade-in-up border border-slate-100 max-h-[90vh] flex flex-col">
+                <div className="bg-spirit-900 px-6 py-4 flex justify-between items-center shrink-0">
+                    <div>
+                        <h3 className="text-lg font-serif font-bold text-white flex items-center"><HandHeart className="w-4 h-4 mr-2 text-accent-500" /> Prayer Request</h3>
+                        <p className="text-xs text-slate-300 mt-1">Join the Collective Prayer</p>
+                    </div>
+                    <button onClick={() => setIsPrayerRequestModalOpen(false)} className="text-slate-400 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-1.5 rounded-full"><X size={18} /></button>
+                </div>
+                <div className="p-6 overflow-y-auto custom-scrollbar">
+                    <form onSubmit={handlePrayerRequestSubmit} className="space-y-4">
+                        <input type="text" required placeholder="Full Name" value={prayerRequestName} onChange={(e) => setPrayerRequestName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                        <input type="text" required placeholder="Mother's Name" value={prayerRequestMotherName} onChange={(e) => setPrayerRequestMotherName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                        <input type="date" required placeholder="Date of Birth" value={prayerRequestDob} onChange={(e) => setPrayerRequestDob(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-600" />
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <input type="tel" required placeholder="Phone Number" value={prayerRequestPhone} onChange={(e) => setPrayerRequestPhone(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                            <input type="email" required placeholder="Email Address" value={prayerRequestEmail} onChange={(e) => setPrayerRequestEmail(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <input type="text" required placeholder="City" value={prayerRequestCity} onChange={(e) => setPrayerRequestCity(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                            <input type="text" required placeholder="Country" value={prayerRequestCountry} onChange={(e) => setPrayerRequestCountry(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <input type="text" required placeholder="What You Have Recited?" value={prayerRequestRecitation} onChange={(e) => setPrayerRequestRecitation(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                            <input type="number" required placeholder="Count (How many times)" value={prayerRequestRecitationCount} onChange={(e) => setPrayerRequestRecitationCount(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                        </div>
+
+                        <input type="text" required placeholder="Purpose (e.g. Health, Success)" value={prayerRequestPurpose} onChange={(e) => setPrayerRequestPurpose(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" />
+                        <textarea required rows={3} placeholder="Your Message or Specific Duaa..." value={prayerRequestMessage} onChange={(e) => setPrayerRequestMessage(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none"></textarea>
+                        
+                        <button type="submit" disabled={isConsultSubmitting} className="w-full bg-accent-500 text-white font-bold py-4 rounded-xl mt-2 flex items-center justify-center gap-2">
+                            {isConsultSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : <Send size={18} />}
+                            <span>Submit Prayer Request</span>
+                        </button>
+                    </form>
+                </div>
            </div>
         </div>
       )}
