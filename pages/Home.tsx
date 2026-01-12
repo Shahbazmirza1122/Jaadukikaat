@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Sun, ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Mail, Phone, User, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, MapPin, Globe, Users, MessageSquare, Check, ChevronLeft, ChevronRight, ShoppingBag, Tag } from 'lucide-react';
