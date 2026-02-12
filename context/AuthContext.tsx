@@ -13,8 +13,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ error: any }>;
-  signup: (name: string, email: string, password: string) => Promise<{ error: any }>;
+  login: (email: string, password: string) => Promise<{ data: any; error: any }>;
+  signup: (name: string, email: string, password: string) => Promise<{ data: any; error: any }>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -29,10 +29,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     // Check active session on startup
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ? mapSupabaseUser(session.user) : null);
-      setLoading(false);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+            console.warn("Session check error (likely offline):", error.message);
+            // Don't throw, just let user be logged out
+        } else {
+            setSession(session);
+            setUser(session?.user ? mapSupabaseUser(session.user) : null);
+        }
+      } catch (e) {
+        console.warn('Unexpected error recovering session:', e);
+      } finally {
+        setLoading(false);
+      }
     };
 
     getSession();
@@ -56,30 +66,50 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { data, error };
+    } catch (err: any) {
+      // Return structured error for UI to handle
+      return { 
+        data: null, 
+        error: { message: err.message || 'Failed to connect to authentication server.' } 
+      };
+    }
   };
 
   const signup = async (name: string, email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
         },
-      },
-    });
-    return { error };
+      });
+      return { data, error };
+    } catch (err: any) {
+      return { 
+        data: null, 
+        error: { message: err.message || 'Failed to connect to authentication server.' } 
+      };
+    }
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Error signing out:', err);
+    } finally {
+      setUser(null);
+      setSession(null);
+    }
   };
 
   return (

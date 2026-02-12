@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Heart, Star, Check, ShieldCheck, Truck, RotateCcw, Loader2, Tag, XCircle, Lock } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Heart, Star, Check, ShieldCheck, Truck, RotateCcw, Loader2, Tag, XCircle, Lock, Zap } from 'lucide-react';
 import { products as staticProducts, Product } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../lib/supabase';
@@ -70,6 +70,14 @@ const ProductPage: React.FC = () => {
     }
   };
 
+  const handleBuyNow = () => {
+    if (product && !product.isOutOfStock) {
+        addToCart(product);
+        // Navigate to cart with a state flag to open checkout immediately
+        navigate('/cart', { state: { openCheckout: true } });
+    }
+  };
+
   const isSaleActive = (product: Product) => {
       if (!product.salePrice) return false;
       const now = new Date();
@@ -83,9 +91,65 @@ const ProductPage: React.FC = () => {
 
   if (isLoading) {
     return (
-        <div className="min-h-screen pt-24 flex justify-center">
-            <Loader2 className="animate-spin w-10 h-10 text-spirit-500" />
+      <div className="bg-white min-h-screen pt-24 pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-pulse">
+          {/* Back Button Skeleton */}
+          <div className="h-6 w-32 bg-slate-100 rounded mb-8"></div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
+            {/* Image Skeleton */}
+            <div className="space-y-6">
+              <div className="aspect-square bg-slate-100 rounded-[2rem] border border-slate-50"></div>
+            </div>
+
+            {/* Details Skeleton */}
+            <div className="flex flex-col">
+              {/* Badges */}
+              <div className="flex gap-2 mb-6">
+                <div className="h-6 w-20 bg-slate-100 rounded-full"></div>
+                <div className="h-6 w-24 bg-slate-100 rounded-full"></div>
+              </div>
+              
+              {/* Title */}
+              <div className="h-12 w-3/4 bg-slate-100 rounded-xl mb-6"></div>
+              
+              {/* Price & Rating */}
+              <div className="flex items-center space-x-4 mb-8">
+                <div className="h-10 w-24 bg-slate-100 rounded-lg"></div>
+                <div className="h-6 w-32 bg-slate-100 rounded-lg"></div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-4 mb-8">
+                <div className="h-4 w-full bg-slate-100 rounded"></div>
+                <div className="h-4 w-full bg-slate-100 rounded"></div>
+                <div className="h-4 w-2/3 bg-slate-100 rounded"></div>
+              </div>
+
+              {/* Checklist */}
+              <div className="space-y-4 mb-8">
+                <div className="h-5 w-48 bg-slate-100 rounded"></div>
+                <div className="h-5 w-48 bg-slate-100 rounded"></div>
+                <div className="h-5 w-48 bg-slate-100 rounded"></div>
+              </div>
+
+              {/* Features */}
+              <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="h-24 bg-slate-100 rounded-xl"></div>
+                <div className="h-24 bg-slate-100 rounded-xl"></div>
+                <div className="h-24 bg-slate-100 rounded-xl"></div>
+              </div>
+
+              {/* Buttons */}
+              <div className="mt-auto flex flex-row gap-2 sm:gap-4">
+                <div className="h-14 sm:h-16 flex-1 bg-slate-100 rounded-xl"></div>
+                <div className="h-14 sm:h-16 flex-1 bg-slate-100 rounded-xl"></div>
+                <div className="h-14 sm:h-16 w-14 sm:w-20 bg-slate-100 rounded-xl"></div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
     );
   }
 
@@ -135,21 +199,6 @@ const ProductPage: React.FC = () => {
                          </div>
                     </div>
                )}
-            </div>
-            {/* Features Icons */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <ShieldCheck className="w-6 h-6 mx-auto mb-2 text-spirit-600" />
-                <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">Authentic</span>
-              </div>
-              <div className="text-center p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <Truck className="w-6 h-6 mx-auto mb-2 text-spirit-600" />
-                <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">Worldwide</span>
-              </div>
-              <div className="text-center p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <RotateCcw className="w-6 h-6 mx-auto mb-2 text-spirit-600" />
-                <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">Returns</span>
-              </div>
             </div>
           </div>
 
@@ -213,20 +262,49 @@ const ProductPage: React.FC = () => {
                </div>
             </div>
 
+            {/* Features Icons - Moved and Animated */}
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="text-center p-4 bg-slate-50 rounded-xl border border-slate-100 hover:shadow-lg hover:bg-white hover:border-spirit-100 transition-all duration-300 transform hover:-translate-y-1 cursor-default group">
+                <ShieldCheck className="w-6 h-6 mx-auto mb-2 text-spirit-600 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-slate-600 uppercase tracking-wide group-hover:text-spirit-600 transition-colors">Authentic</span>
+              </div>
+              <div className="text-center p-4 bg-slate-50 rounded-xl border border-slate-100 hover:shadow-lg hover:bg-white hover:border-spirit-100 transition-all duration-300 transform hover:-translate-y-1 cursor-default group">
+                <Truck className="w-6 h-6 mx-auto mb-2 text-spirit-600 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-slate-600 uppercase tracking-wide group-hover:text-spirit-600 transition-colors">Worldwide</span>
+              </div>
+              <div className="text-center p-4 bg-slate-50 rounded-xl border border-slate-100 hover:shadow-lg hover:bg-white hover:border-spirit-100 transition-all duration-300 transform hover:-translate-y-1 cursor-default group">
+                <RotateCcw className="w-6 h-6 mx-auto mb-2 text-spirit-600 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-slate-600 uppercase tracking-wide group-hover:text-spirit-600 transition-colors">Returns</span>
+              </div>
+            </div>
+
             <div className="mt-auto space-y-4">
-              <div className="flex gap-4">
+              <div className="flex flex-row gap-2 sm:gap-4">
                 <button 
                   onClick={handleAddToCart}
                   disabled={!!product.isOutOfStock}
-                  className={`flex-1 font-bold py-4 rounded-xl shadow-xl flex items-center justify-center gap-3 text-lg transition-all ${product.isOutOfStock ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-spirit-900 text-white hover:bg-accent-600'}`}
+                  className={`flex-1 font-bold py-3 px-3 sm:py-4 sm:px-6 rounded-xl shadow-md flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-lg transition-all ${product.isOutOfStock ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-white border-2 border-spirit-900 text-spirit-900 hover:bg-spirit-50'}`}
                 >
-                  <ShoppingBag className="w-6 h-6" /> {product.isOutOfStock ? 'Unavailable' : 'Add to Cart'}
+                  <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6" /> 
+                  <span className="sm:hidden">Add</span>
+                  <span className="hidden sm:inline">Add to Cart</span>
                 </button>
+                
+                <button 
+                  onClick={handleBuyNow}
+                  disabled={!!product.isOutOfStock}
+                  className={`flex-1 font-bold py-3 px-3 sm:py-4 sm:px-6 rounded-xl shadow-xl flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-lg transition-all ${product.isOutOfStock ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-accent-500 text-white hover:bg-accent-600 hover:shadow-2xl'}`}
+                >
+                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 fill-current" /> 
+                  <span className="sm:hidden">Buy</span>
+                  <span className="hidden sm:inline">Buy Now</span>
+                </button>
+
                 <button 
                   onClick={() => setIsWishlisted(!isWishlisted)}
-                  className={`px-6 rounded-xl border-2 flex items-center justify-center transition-colors ${isWishlisted ? 'border-red-500 text-red-500 bg-red-50' : 'border-slate-200 text-slate-400 hover:border-red-400 hover:text-red-400'}`}
+                  className={`px-3 sm:px-6 rounded-xl border-2 flex items-center justify-center transition-colors ${isWishlisted ? 'border-red-500 text-red-500 bg-red-50' : 'border-slate-200 text-slate-400 hover:border-red-400 hover:text-red-400'}`}
                 >
-                  <Heart className={`w-8 h-8 ${isWishlisted ? 'fill-current' : ''}`} />
+                  <Heart className={`w-6 h-6 sm:w-8 sm:h-8 ${isWishlisted ? 'fill-current' : ''}`} />
                 </button>
               </div>
               <p className="text-center text-xs text-slate-400">Secure Checkout • Satisfaction Guaranteed</p>

@@ -2,13 +2,14 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Sun, ArrowRight, User, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { Sun, ArrowRight, User, Lock, Mail, Loader2, AlertCircle, Eye, EyeOff, WifiOff } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
@@ -25,19 +26,55 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
+      let result;
       if (isLogin) {
-        const { error } = await login(email, password);
-        if (error) throw error;
-        navigate(from, { replace: true });
+        result = await login(email, password);
       } else {
-        const { error } = await signup(name, email, password);
-        if (error) throw error;
-        
-        // Show verification popup on successful signup
+        result = await signup(name, email, password);
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      // If session exists (login success or auto-confirmed signup)
+      if (result.data && result.data.session) {
+        navigate(from, { replace: true });
+      } else if (!isLogin && result.data && !result.data.session) {
+        // Signup successful but email confirmation required
         setShowVerification(true);
       }
     } catch (err: any) {
-      setError(err.message || 'An authentication error occurred.');
+      console.error("Auth Error:", err);
+      
+      // Determine the best error message to show
+      let msg = 'An authentication error occurred.';
+      
+      if (typeof err === 'string') {
+        msg = err;
+      } else if (err?.message) {
+        msg = err.message;
+      } else if (err?.error_description) {
+        msg = err.error_description;
+      }
+
+      // Normalize message for check
+      const lowerMsg = msg.toLowerCase();
+
+      if (
+        lowerMsg.includes('failed to fetch') || 
+        lowerMsg.includes('network request failed') ||
+        lowerMsg.includes('networkerror') ||
+        lowerMsg.includes('connection refused')
+      ) {
+        msg = 'Unable to connect to the server. Please check your internet connection or try again later.';
+      } else if (lowerMsg.includes('invalid login credentials')) {
+        msg = 'Incorrect email or password. Please try again.';
+      } else if (lowerMsg.includes('user already registered')) {
+        msg = 'This email is already registered. Please sign in instead.';
+      }
+
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -51,7 +88,7 @@ const LoginPage: React.FC = () => {
 
   if (showVerification) {
     return (
-      <div className="min-h-screen pt-24 pb-20 bg-spirit-50 flex items-center justify-center px-4 animate-fade-in">
+      <div className="min-h-screen pt-48 pb-24 bg-spirit-50 flex items-center justify-center px-4 animate-fade-in">
          <div className="bg-white p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-md border border-spirit-100 text-center relative animate-fade-in-up">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
                <Mail className="w-10 h-10 text-green-600" />
@@ -74,12 +111,12 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-20 bg-spirit-50 flex items-center justify-center px-4">
+    <div className="min-h-screen pt-48 pb-24 bg-spirit-50 flex items-center justify-center px-4">
       <div className="bg-white p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-md border border-spirit-100 animate-fade-in-up">
         
         <div className="text-center mb-8">
-           <div className="w-16 h-16 bg-accent-50 rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-3 shadow-inner">
-             <Sun className="w-8 h-8 text-accent-500" />
+           <div className="mx-auto mb-6">
+             <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1770399481/Jaadu_Ki-removebg-preview_wnzo57.png" alt="Jaadu ki kaat Logo" className="h-40 mx-auto invert" />
            </div>
            <h1 className="text-3xl font-serif font-bold text-spirit-900 mb-2">
              {isLogin ? 'Welcome Back' : 'Join the Sanctuary'}
@@ -90,8 +127,8 @@ const LoginPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl flex items-start gap-3 text-sm">
-             <AlertCircle className="w-5 h-5 shrink-0" />
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl flex items-start gap-3 text-sm animate-fade-in">
+             {error.toLowerCase().includes('connect') ? <WifiOff className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
              <span>{error}</span>
           </div>
         )}
@@ -126,13 +163,21 @@ const LoginPage: React.FC = () => {
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input 
-              type="password" 
+              type={showPassword ? "text" : "password"}
               placeholder="Password" 
               required 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition"
+              className="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition"
             />
+            <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-spirit-600 focus:outline-none p-1"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
           </div>
 
           <button 

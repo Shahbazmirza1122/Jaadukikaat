@@ -1,10 +1,10 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Sun, ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Mail, Phone, User, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, MapPin, Globe, Users, MessageSquare, Check, ChevronLeft, ChevronRight, ShoppingBag, Tag } from 'lucide-react';
 import { BlogPost } from '../types';
 import { products as staticProducts, Product } from '../data/products';
 import { submitToGoogleSheet } from '../services/sheetService';
-import SpiritualGuide from '../components/SpiritualGuide';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 
@@ -12,6 +12,7 @@ const Home: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [productsList, setProductsList] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -37,45 +38,59 @@ const Home: React.FC = () => {
   // Fetch Data
   useEffect(() => {
     const fetchBlogs = async () => {
-      const { data } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('status', 'published')
+          .order('created_at', { ascending: false });
 
-      if (data) {
-        setBlogPosts(data.map((p: any) => ({
-          ...p,
-          imageUrl: p.image_url || p.imageUrl,
-          relatedIds: p.related_ids || p.relatedIds
-        })));
+        if (error) {
+            console.error("Supabase blog fetch error:", error);
+        } else if (data) {
+          setBlogPosts(data.map((p: any) => ({
+            ...p,
+            imageUrl: p.image_url || p.imageUrl,
+            relatedIds: p.related_ids || p.relatedIds
+          })));
+        }
+      } catch (err) {
+        console.warn("Failed to fetch blogs (network/offline):", err);
       }
     };
 
     const fetchProducts = async () => {
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
-        if (error || !data || data.length === 0) {
+        setProductsLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error || !data || data.length === 0) {
+                setProductsList(staticProducts);
+            } else {
+                const mapped = data.map((p: any) => ({
+                    id: p.id,
+                    name: p.name,
+                    price: p.price,
+                    image: p.image,
+                    category: p.category,
+                    description: p.description,
+                    sku: p.sku,
+                    salePrice: p.sale_price,
+                    saleStart: p.sale_start,
+                    saleEnd: p.sale_end,
+                    isOutOfStock: p.is_out_of_stock,
+                    isBlurBeforeBuy: p.is_blur_before_buy
+                }));
+                setProductsList(mapped);
+            }
+        } catch (err) {
+            console.warn("Failed to fetch products (network/offline):", err);
             setProductsList(staticProducts);
-        } else {
-            const mapped = data.map((p: any) => ({
-                id: p.id,
-                name: p.name,
-                price: p.price,
-                image: p.image,
-                category: p.category,
-                description: p.description,
-                sku: p.sku,
-                salePrice: p.sale_price,
-                saleStart: p.sale_start,
-                saleEnd: p.sale_end,
-                isOutOfStock: p.is_out_of_stock,
-                isBlurBeforeBuy: p.is_blur_before_buy
-            }));
-            setProductsList(mapped);
+        } finally {
+            setProductsLoading(false);
         }
     };
 
@@ -571,86 +586,102 @@ const Home: React.FC = () => {
                 className="flex gap-8 overflow-x-auto pb-8 snap-x mandatory hide-scrollbar"
                 style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-                {productsList.map(product => {
-                    const onSale = isSaleActive(product);
-                    const currentPrice = onSale ? product.salePrice : product.price;
-
-                    return (
-                    <Link to={`/product/${product.id}`} key={product.id} className="min-w-[280px] md:min-w-[320px] bg-white rounded-3xl p-4 shadow-lg hover:shadow-2xl transition-all duration-300 group snap-center border border-spirit-100 flex-shrink-0 flex flex-col cursor-pointer relative">
-                        {/* Image Area */}
-                        <div className="h-72 rounded-2xl overflow-hidden mb-6 relative">
-                            <img 
-                                src={product.image} 
-                                alt={product.name} 
-                                className={`w-full h-full object-cover transform group-hover:scale-110 transition duration-700 
-                                    ${product.isOutOfStock ? 'grayscale opacity-70' : ''}
-                                    ${product.isBlurBeforeBuy ? 'blur-md scale-110' : ''}
-                                `} 
-                            />
-                            
-                            {/* Blur Overlay Label */}
-                            {product.isBlurBeforeBuy && !product.isOutOfStock && (
-                                <div className="absolute inset-0 flex items-center justify-center z-20">
-                                    <div className="bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 text-white font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2">
-                                        <Lock size={12} /> Hidden
-                                    </div>
+                {productsLoading ? (
+                    // Skeleton Loading State
+                    Array(4).fill(0).map((_, index) => (
+                        <div key={`skeleton-${index}`} className="min-w-[280px] md:min-w-[320px] bg-white rounded-3xl p-4 shadow-sm border border-spirit-100 flex-shrink-0 flex flex-col relative animate-pulse snap-center">
+                            <div className="h-72 bg-slate-200 rounded-2xl mb-6"></div>
+                            <div className="px-2 pb-2 flex-grow flex flex-col">
+                                <div className="h-6 bg-slate-200 rounded w-3/4 mb-3"></div>
+                                <div className="flex justify-between items-center mt-auto pt-4">
+                                    <div className="h-6 bg-slate-200 rounded w-1/4"></div>
+                                    <div className="h-8 bg-slate-200 rounded-full w-1/3"></div>
                                 </div>
-                            )}
-
-                            {/* Out of Stock Overlay */}
-                            {product.isOutOfStock && (
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
-                                    <span className="bg-red-600 text-white px-3 py-1 rounded-full font-bold uppercase text-[10px] tracking-wider shadow-lg">Sold Out</span>
-                                </div>
-                            )}
-
-                            <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-30">
-                                <span className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-900 shadow-sm">
-                                    {product.category}
-                                </span>
-                                {onSale && !product.isOutOfStock && (
-                                    <span className="bg-red-500 text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1">
-                                        <Tag size={10} /> Sale
-                                    </span>
-                                )}
-                            </div>
-                            
-                            {/* Overlay Actions */}
-                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 z-10">
-                               <button 
-                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }}
-                                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg ${wishlist.includes(product.id) ? 'bg-red-500 text-white' : 'bg-white text-slate-700 hover:text-red-500'}`}
-                                >
-                                  <Heart size={20} className={wishlist.includes(product.id) ? 'fill-current' : ''} />
-                               </button>
                             </div>
                         </div>
-                        
-                        {/* Content Area */}
-                        <div className="px-2 pb-2 flex-grow flex flex-col">
-                            <h3 className="font-serif font-bold text-xl text-spirit-900 mb-1 truncate group-hover:text-accent-600 transition-colors" title={product.name}>{product.name}</h3>
-                            <div className="flex justify-between items-center mt-auto pt-4">
-                                <div className="flex flex-col">
-                                    {onSale ? (
-                                        <>
-                                            <span className="text-red-600 font-bold text-xl">{currentPrice}</span>
-                                            <span className="text-slate-400 text-xs line-through decoration-slate-400">{product.price}</span>
-                                        </>
-                                    ) : (
-                                        <span className="text-accent-600 font-bold text-xl">{product.price}</span>
+                    ))
+                ) : (
+                    productsList.map(product => {
+                        const onSale = isSaleActive(product);
+                        const currentPrice = onSale ? product.salePrice : product.price;
+
+                        return (
+                        <Link to={`/product/${product.id}`} key={product.id} className="min-w-[280px] md:min-w-[320px] bg-white rounded-3xl p-4 shadow-lg hover:shadow-2xl transition-all duration-300 group snap-center border border-spirit-100 flex-shrink-0 flex flex-col cursor-pointer relative">
+                            {/* Image Area */}
+                            <div className="h-72 rounded-2xl overflow-hidden mb-6 relative">
+                                <img 
+                                    src={product.image} 
+                                    alt={product.name} 
+                                    className={`w-full h-full object-cover transform group-hover:scale-110 transition duration-700 
+                                        ${product.isOutOfStock ? 'grayscale opacity-70' : ''}
+                                        ${product.isBlurBeforeBuy ? 'blur-md scale-110' : ''}
+                                    `} 
+                                />
+                                
+                                {/* Blur Overlay Label */}
+                                {product.isBlurBeforeBuy && !product.isOutOfStock && (
+                                    <div className="absolute inset-0 flex items-center justify-center z-20">
+                                        <div className="bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 text-white font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2">
+                                            <Lock size={12} /> Hidden
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Out of Stock Overlay */}
+                                {product.isOutOfStock && (
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
+                                        <span className="bg-red-600 text-white px-3 py-1 rounded-full font-bold uppercase text-[10px] tracking-wider shadow-lg">Sold Out</span>
+                                    </div>
+                                )}
+
+                                <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-30">
+                                    <span className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-900 shadow-sm">
+                                        {product.category}
+                                    </span>
+                                    {onSale && !product.isOutOfStock && (
+                                        <span className="bg-red-500 text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1">
+                                            <Tag size={10} /> Sale
+                                        </span>
                                     )}
                                 </div>
+                                
+                                {/* Overlay Actions */}
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 z-10">
                                 <button 
-                                    onClick={(e) => handleAddToCart(e, product)}
-                                    disabled={!!product.isOutOfStock}
-                                    className={`px-4 py-2 rounded-full flex items-center gap-2 transition-colors text-sm font-bold ${product.isOutOfStock ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-spirit-50 text-spirit-900 hover:bg-accent-500 hover:text-white'}`}
-                                >
-                                    <ShoppingBag size={16} /> {product.isOutOfStock ? 'Sold Out' : 'Add'}
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg ${wishlist.includes(product.id) ? 'bg-red-500 text-white' : 'bg-white text-slate-700 hover:text-red-500'}`}
+                                    >
+                                    <Heart size={20} className={wishlist.includes(product.id) ? 'fill-current' : ''} />
                                 </button>
+                                </div>
                             </div>
-                        </div>
-                    </Link>
-                )})}
+                            
+                            {/* Content Area */}
+                            <div className="px-2 pb-2 flex-grow flex flex-col">
+                                <h3 className="font-serif font-bold text-xl text-spirit-900 mb-1 truncate group-hover:text-accent-600 transition-colors" title={product.name}>{product.name}</h3>
+                                <div className="flex justify-between items-center mt-auto pt-4">
+                                    <div className="flex flex-col">
+                                        {onSale ? (
+                                            <>
+                                                <span className="text-red-600 font-bold text-xl">{currentPrice}</span>
+                                                <span className="text-slate-400 text-xs line-through decoration-slate-400">{product.price}</span>
+                                            </>
+                                        ) : (
+                                            <span className="text-accent-600 font-bold text-xl">{product.price}</span>
+                                        )}
+                                    </div>
+                                    <button 
+                                        onClick={(e) => handleAddToCart(e, product)}
+                                        disabled={!!product.isOutOfStock}
+                                        className={`px-4 py-2 rounded-full flex items-center gap-2 transition-colors text-sm font-bold ${product.isOutOfStock ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-spirit-50 text-spirit-900 hover:bg-accent-500 hover:text-white'}`}
+                                    >
+                                        <ShoppingBag size={16} /> {product.isOutOfStock ? 'Sold Out' : 'Add'}
+                                    </button>
+                                </div>
+                            </div>
+                        </Link>
+                    ))
+                )}
                 
                 {/* Add a spacer at the end for better scrolling feel */}
                 <div className="min-w-[20px]"></div>

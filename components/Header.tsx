@@ -67,15 +67,8 @@ const Header: React.FC = () => {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <Link to="/" onClick={(e) => handleNavClick(e, '/#top')} className="flex items-center space-x-3 group">
-              <div className={`p-2 rounded-xl transition-all duration-300 ${scrolled ? 'bg-spirit-900 shadow-md' : 'bg-accent-500 shadow-lg'}`}>
-                <Sun className={`h-6 w-6 transition-colors ${scrolled ? 'text-accent-400' : 'text-white'}`} />
-              </div>
-              <span className={`text-2xl font-serif font-bold tracking-tight uppercase transition-colors ${
-                scrolled ? 'text-spirit-900' : 'text-white'
-              }`}>
-                Jaadu ki kaat
-              </span>
+            <Link to="/" onClick={(e) => handleNavClick(e, '/#top')} className="flex items-center group">
+              <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1770399481/Jaadu_Ki-removebg-preview_wnzo57.png" alt="Jaadu ki kaat Logo" className={`transition-all duration-300 ${scrolled ? 'h-20 -my-4 invert' : 'h-24 -my-4'}`} />
             </Link>
 
             {/* Desktop Menu */}

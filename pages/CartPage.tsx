@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Lock, CircleCheck, Loader2, LogIn, CreditCard, ShieldCheck, Ticket, X } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Lock, CircleCheck, Loader2, LogIn, CreditCard, ShieldCheck, Ticket, X, Smartphone } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { submitToGoogleSheet, sendOrderEmail } from '../services/sheetService';
 import { supabase } from '../lib/supabase';
@@ -21,7 +21,7 @@ const CartPage: React.FC = () => {
   const [zip, setZip] = useState('');
   
   // Payment State
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'jazzcash'>('card');
   const [cardName, setCardName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -37,6 +37,13 @@ const CartPage: React.FC = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
+
+  // Check for direct checkout navigation
+  useEffect(() => {
+    if (location.state && location.state.openCheckout) {
+        setIsCheckout(true);
+    }
+  }, [location.state]);
 
   // Auto-fill user details if logged in
   useEffect(() => {
@@ -205,13 +212,18 @@ const CartPage: React.FC = () => {
     
     const discountNote = appliedCoupon ? ` | Coupon: ${appliedCoupon.code} (-$${discountAmount.toFixed(2)})` : '';
 
+    let paymentLabel = '';
+    if (paymentMethod === 'card') paymentLabel = `Credit Card (${cardBrand.toUpperCase()} ending ${cardNumber.slice(-4)})`;
+    else if (paymentMethod === 'jazzcash') paymentLabel = 'JazzCash (Manual)';
+    else paymentLabel = 'PayPal';
+
     // 1. Submit to Sheet
     const orderData = {
         'Full Name': fullName,
         'Email Address': email,
         'Requesting Service': 'Order',
         'Message': `Order ID: ${orderId}. Address: ${address}, ${city}, ${zip}. 
-                   Payment: ${paymentMethod.toUpperCase()} (${cardBrand.toUpperCase()} ending ${cardNumber.slice(-4)}). 
+                   Payment: ${paymentLabel}. 
                    Order: ${orderDetails}. 
                    Total: $${finalTotal.toFixed(2)}${discountNote}`
     };
@@ -224,7 +236,7 @@ const CartPage: React.FC = () => {
       email,
       details: orderDetails,
       total: `$${finalTotal.toFixed(2)}`,
-      paymentMethod: paymentMethod === 'card' ? `Credit Card (${cardBrand.toUpperCase()})` : 'PayPal',
+      paymentMethod: paymentLabel,
       orderId
     });
 
@@ -234,7 +246,7 @@ const CartPage: React.FC = () => {
             user_id: user.id,
             items: cart, // Store full cart array including blurred items
             total: finalTotal,
-            status: 'Paid'
+            status: paymentMethod === 'card' || paymentMethod === 'paypal' ? 'Paid' : 'Pending Verification'
         }]);
         if (error) {
             console.error("Failed to save order to history:", error);
@@ -257,9 +269,12 @@ const CartPage: React.FC = () => {
                 <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <CircleCheck className="w-12 h-12 text-green-500" />
                 </div>
-                <h2 className="text-3xl font-serif font-bold text-spirit-900 mb-4">Payment Successful!</h2>
+                <h2 className="text-3xl font-serif font-bold text-spirit-900 mb-4">Order Placed!</h2>
                 <p className="text-slate-600 mb-8 leading-relaxed">
-                    Thank you, <span className="font-bold text-spirit-900">{fullName}</span>. Your order has been placed. 
+                    Thank you, <span className="font-bold text-spirit-900">{fullName}</span>. 
+                    {paymentMethod === 'jazzcash' 
+                        ? ' Your order has been placed. Please complete your JazzCash transfer to confirm.' 
+                        : ' Your payment was successful.'}
                     <br/><br/>
                     <span className="bg-green-50 text-green-800 text-sm font-bold px-3 py-1 rounded-full">
                        ✓ A confirmation email has been sent to {email}
@@ -305,7 +320,7 @@ const CartPage: React.FC = () => {
             <div className="lg:col-span-2 space-y-6">
               
               {!isCheckout ? (
-                  // Cart Item List
+                  // Cart Item List (Standard View)
                   cart.map((item) => (
                     <div key={item.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center gap-6 animate-fade-in">
                       <div className="w-24 h-24 bg-spirit-50 rounded-xl overflow-hidden shrink-0 relative">
@@ -393,9 +408,17 @@ const CartPage: React.FC = () => {
                                   <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M7.076 21.337l.756-4.728 6.506-1.376c2.518-.62 5.035-2.915 5.035-6.19 0-3.35-1.745-6.315-5.322-6.315H4.825a.89.89 0 00-.889.775L2.001 21.05a.44.44 0 00.438.517h3.915a.73.73 0 00.722-.23z"/></svg>
                                   <span className="text-sm font-bold">PayPal</span>
                               </button>
+                              <button 
+                                type="button"
+                                onClick={() => setPaymentMethod('jazzcash')}
+                                className={`flex-1 py-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === 'jazzcash' ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'}`}
+                              >
+                                  <Smartphone size={24} />
+                                  <span className="text-sm font-bold">JazzCash</span>
+                              </button>
                           </div>
 
-                          {paymentMethod === 'card' ? (
+                          {paymentMethod === 'card' && (
                             <div className="space-y-4 animate-fade-in">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Cardholder Name</label>
@@ -435,10 +458,32 @@ const CartPage: React.FC = () => {
                                     <span>Payments are SSL encrypted and secured.</span>
                                 </div>
                             </div>
-                          ) : (
-                              <div className="bg-blue-50 text-blue-800 p-6 rounded-xl text-center">
+                          )}
+                          
+                          {paymentMethod === 'paypal' && (
+                              <div className="bg-blue-50 text-blue-800 p-6 rounded-xl text-center animate-fade-in">
                                   <p className="font-bold mb-2">Redirect to PayPal</p>
                                   <p className="text-sm">You will be redirected to PayPal to securely complete your payment.</p>
+                              </div>
+                          )}
+
+                          {paymentMethod === 'jazzcash' && (
+                              <div className="bg-red-50 border border-red-100 text-red-900 p-6 rounded-xl text-center animate-fade-in">
+                                  <div className="mb-4 flex justify-center"><Smartphone className="w-10 h-10 text-red-600" /></div>
+                                  <p className="font-serif font-bold text-lg mb-4">JazzCash Payment Instructions</p>
+                                  <p className="text-sm mb-6 leading-relaxed">
+                                      You can pay through Jazzcash. Make advance payment in the following account and share the screenshot on same number.
+                                  </p>
+                                  <div className="bg-white p-5 rounded-xl border border-red-100 shadow-sm inline-block text-left w-full">
+                                      <div className="flex justify-between items-center mb-2 border-b border-dashed border-red-200 pb-2">
+                                          <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Our Account Till ID</span>
+                                          <span className="font-mono font-bold text-lg text-red-700">982408323</span>
+                                      </div>
+                                      <div className="flex justify-between items-center pt-2">
+                                          <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Account Title</span>
+                                          <span className="font-bold text-slate-800">Jaadu Ki Kaat</span>
+                                      </div>
+                                  </div>
                               </div>
                           )}
                       </div>
@@ -448,33 +493,48 @@ const CartPage: React.FC = () => {
 
             {/* Right Column: Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-3xl p-8 shadow-lg border border-slate-100 sticky top-28">
-                <h3 className="font-serif font-bold text-xl text-spirit-900 mb-6">Order Summary</h3>
+              <div className="bg-white rounded-3xl p-6 shadow-lg border border-slate-100 sticky top-28">
+                <h3 className="font-serif font-bold text-2xl text-spirit-900 mb-6">Order Summary</h3>
                 
                 {isCheckout && (
-                    <div className="mb-6 space-y-3 max-h-48 overflow-y-auto custom-scrollbar border-b border-slate-100 pb-4">
+                    <div className="mb-4 space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar border-b border-slate-100 pb-4 pt-2 px-1 animate-fade-in">
                         {cart.map(item => (
-                            <div key={item.id} className="flex justify-between text-sm">
-                                <span className="text-slate-600">{item.name} <span className="text-xs text-slate-400">x{item.quantity}</span></span>
-                                <span className="font-bold text-slate-800">{item.price}</span>
+                            <div key={item.id} className="flex gap-4 items-center group">
+                                <div className="relative w-14 h-14 bg-white border border-slate-200 rounded-xl p-1 shadow-sm shrink-0">
+                                    <img 
+                                        src={item.image} 
+                                        alt={item.name} 
+                                        className="w-full h-full object-cover rounded-lg" 
+                                    />
+                                    <div className="absolute -top-2 -right-2 bg-gray-600 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full shadow-md z-10 border-2 border-white">
+                                        {item.quantity}
+                                    </div>
+                                </div>
+                                <div className="flex-grow min-w-0">
+                                    <h4 className="font-bold text-slate-800 text-base truncate">{item.name}</h4>
+                                    <p className="text-sm text-slate-500 truncate mt-0.5">{item.category}</p>
+                                </div>
+                                <div className="text-base font-bold text-slate-800 whitespace-nowrap">
+                                    {item.price}
+                                </div>
                             </div>
                         ))}
                     </div>
                 )}
 
                 {/* Coupon Code Section */}
-                <div className="mb-6">
+                <div className="mb-4 pb-4 border-b border-slate-100">
                     {appliedCoupon ? (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex justify-between items-center animate-fade-in">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-2 flex justify-between items-center animate-fade-in">
                             <div className="flex items-center gap-2">
-                                <Ticket size={16} className="text-green-600" />
+                                <Ticket size={14} className="text-green-600" />
                                 <div>
                                     <p className="text-xs font-bold text-green-800 uppercase tracking-wider">Coupon Applied</p>
                                     <p className="text-sm font-bold text-green-700">{appliedCoupon.code}</p>
                                 </div>
                             </div>
                             <button onClick={removeCoupon} className="text-green-500 hover:text-red-500 transition">
-                                <X size={18} />
+                                <X size={16} />
                             </button>
                         </div>
                     ) : (
@@ -484,62 +544,48 @@ const CartPage: React.FC = () => {
                                     <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                                     <input 
                                         type="text" 
-                                        placeholder="Coupon Code" 
+                                        placeholder="Discount code" 
                                         value={couponCode}
                                         onChange={(e) => setCouponCode(e.target.value)}
-                                        className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-spirit-500 outline-none uppercase font-bold"
+                                        className="w-full pl-9 pr-2 py-2.5 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-spirit-500 outline-none uppercase font-bold placeholder-slate-400 transition"
                                     />
                                 </div>
                                 <button 
                                     type="submit" 
                                     disabled={!couponCode || isVerifyingCoupon}
-                                    className="bg-spirit-900 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-spirit-800 transition disabled:opacity-50"
+                                    className="bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-300 transition disabled:opacity-50"
                                 >
-                                    {isVerifyingCoupon ? <Loader2 className="animate-spin w-4 h-4" /> : 'Apply'}
+                                    {isVerifyingCoupon ? <Loader2 className="animate-spin w-3 h-3" /> : 'Apply'}
                                 </button>
                             </form>
-                            {couponError && <p className="text-xs text-red-500 mt-2 ml-1 font-bold">{couponError}</p>}
+                            {couponError && <p className="text-xs text-red-500 mt-1 ml-1 font-bold">{couponError}</p>}
                         </div>
                     )}
                 </div>
 
-                <div className="space-y-3 mb-6 pb-6 border-b border-slate-100">
-                    <div className="flex justify-between text-slate-600">
+                <div className="space-y-2 mb-4 pb-4 border-b border-slate-100">
+                    <div className="flex justify-between text-slate-600 text-base">
                         <span>Subtotal</span>
-                        <span className="font-bold">${cartTotal.toFixed(2)}</span>
+                        <span className="font-bold text-slate-800">${cartTotal.toFixed(2)}</span>
                     </div>
                     {discountAmount > 0 && (
-                        <div className="flex justify-between text-green-600 animate-fade-in">
-                            <span className="flex items-center gap-1"><Ticket size={14}/> Discount</span>
+                        <div className="flex justify-between text-green-600 animate-fade-in text-base">
+                            <span className="flex items-center gap-1"><Ticket size={16}/> Discount</span>
                             <span className="font-bold">-${discountAmount.toFixed(2)}</span>
                         </div>
                     )}
-                    <div className="flex justify-between text-slate-600">
+                    <div className="flex justify-between text-slate-600 text-base">
                         <span>Shipping</span>
                         <span className="font-bold text-green-600">Free</span>
                     </div>
                 </div>
                 
-                <div className="flex justify-between text-xl font-bold text-spirit-900 mb-8">
+                <div className="flex justify-between text-3xl font-bold text-spirit-900 mb-6">
                     <span>Total</span>
                     <span>${finalTotal.toFixed(2)}</span>
                 </div>
 
-                {!isAuthenticated ? (
-                    <div className="space-y-3">
-                         <div className="bg-orange-50 border border-orange-200 text-orange-800 p-4 rounded-xl text-sm mb-2 flex items-start gap-2">
-                            <Lock size={16} className="mt-0.5 shrink-0" />
-                            <span>Please login to complete your secure checkout.</span>
-                         </div>
-                         <Link 
-                            to="/login"
-                            state={{ from: location }}
-                            className="w-full bg-spirit-900 text-white font-bold py-4 rounded-xl hover:bg-spirit-800 transition shadow-lg flex items-center justify-center gap-2"
-                        >
-                            <LogIn size={20} /> Login to Checkout
-                        </Link>
-                    </div>
-                ) : !isCheckout ? (
+                {!isCheckout ? (
                     <button 
                         onClick={() => setIsCheckout(true)}
                         className="w-full bg-accent-500 text-white font-bold py-4 rounded-xl hover:bg-accent-600 transition shadow-lg flex items-center justify-center gap-2"
@@ -555,7 +601,7 @@ const CartPage: React.FC = () => {
                             className="w-full bg-spirit-900 text-white font-bold py-4 rounded-xl hover:bg-spirit-800 transition shadow-lg flex items-center justify-center gap-2"
                         >
                             {isProcessing ? <Loader2 className="animate-spin" /> : <Lock size={18} />}
-                            {isProcessing ? 'Processing...' : `Pay $${finalTotal.toFixed(2)}`}
+                            {isProcessing ? 'Processing...' : paymentMethod === 'jazzcash' ? 'Confirm Payment' : `Pay $${finalTotal.toFixed(2)}`}
                         </button>
                         <button 
                             type="button" 
@@ -568,8 +614,8 @@ const CartPage: React.FC = () => {
                     </>
                 )}
 
-                <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                    <Lock size={12} />
+                <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-400 font-bold uppercase tracking-widest">
+                    <Lock size={14} />
                     <span>Secure Encrypted Checkout</span>
                 </div>
               </div>

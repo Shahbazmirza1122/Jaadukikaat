@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sun, Facebook, Instagram, Youtube, Mail, Lock } from 'lucide-react';
+import { Facebook, Instagram, Youtube, Mail, Lock, AlertCircle, HelpCircle, Shield, FileText } from 'lucide-react';
 
-// Custom SVGs for icons not in standard library
+// Custom SVGs
 const TiktokIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 1 0 1 7.6 6.83 6.83 0 0 0 6-6.8V6.69z"/></svg>
 );
@@ -12,60 +13,71 @@ const PinterestIcon = ({ className }: { className?: string }) => (
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-spirit-900 text-white pt-10 pb-6 border-t border-white/5 relative overflow-hidden">
-      {/* Decorative Glow */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2"></div>
+    <footer className="bg-spirit-900 text-white pt-16 pb-8 border-t border-white/5 relative overflow-hidden">
+      {/* Decorative Elements */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent-500/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-spirit-500/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/4 pointer-events-none"></div>
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {/* Column 1: Branding & Info */}
-          <div className="col-span-1">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-accent-500 rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.3)]">
-                <Sun className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-2xl font-serif font-bold tracking-tight uppercase">Jaadu ki kaat</span>
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="flex flex-col md:grid md:grid-cols-3 md:gap-12 gap-12">
+          
+          {/* Brand Section */}
+          <div className="flex flex-col items-center md:items-start text-center md:text-left">
+            <div className="mb-6 bg-white/5 p-4 rounded-3xl backdrop-blur-sm border border-white/10 inline-block shadow-xl">
+               <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1770399481/Jaadu_Ki-removebg-preview_wnzo57.png" alt="Jaadu ki kaat Logo" className="h-24 md:h-28" />
             </div>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-xs mb-6">
-              Illuminating paths and identifying spiritual hurdles since 2024. Your journey to inner Shifa begins here with absolute compassion and ancient wisdom.
+            <p className="text-slate-300 text-sm leading-relaxed max-w-sm font-light mb-6">
+              Illuminating paths and identifying spiritual hurdles since 2024. Your journey to inner Shifa begins here with absolute compassion.
             </p>
-            <div className="flex items-center space-x-4 text-slate-300 text-sm font-bold group cursor-pointer">
-              <div className="p-2 bg-white/5 rounded-lg group-hover:bg-accent-500/20 transition-colors">
-                <Mail size={18} className="text-accent-500" />
-              </div>
-              <span className="group-hover:text-accent-400 transition-colors">Info@jaadukikaat.com</span>
+            <div>
+                <a href="mailto:Info@jaadukikaat.com" className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-white/5 border border-white/10 hover:bg-accent-500 hover:border-accent-500 transition-all group shadow-lg hover:shadow-accent-500/25">
+                    <Mail size={18} className="text-accent-400 group-hover:text-white transition-colors" />
+                    <span className="font-bold tracking-wide text-sm group-hover:text-white text-slate-300">Info@jaadukikaat.com</span>
+                </a>
             </div>
           </div>
           
-          {/* Column 2: Quick Links */}
-          <div className="flex flex-col items-center">
-            <h3 className="text-lg font-bold mb-6 font-serif text-accent-400 tracking-wider uppercase text-center">Quick Links</h3>
-            <ul className="space-y-3 text-slate-400 text-sm font-medium flex flex-col items-center">
-              <li><Link to="/disclaimer" className="hover:text-accent-400 transition-colors">Disclaimer</Link></li>
-              <li><Link to="/faq" className="hover:text-accent-400 transition-colors">FAQ</Link></li>
-              <li><Link to="/privacy" className="hover:text-accent-400 transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="hover:text-accent-400 transition-colors">Terms and Conditions</Link></li>
-            </ul>
-          </div>
+          {/* Mobile: Grid for Links (Parallel on Mobile) */}
+          <div className="md:col-span-2 grid grid-cols-2 gap-4 md:gap-8">
+             
+             {/* Quick Links */}
+             <div className="flex flex-col items-start w-full">
+                <h3 className="text-lg md:text-xl font-serif font-bold text-white mb-6 relative inline-block">
+                    Quick Links
+                    <div className="absolute -bottom-2 left-0 w-8 md:w-12 h-1 bg-accent-500 rounded-full"></div>
+                </h3>
+                <div className="flex flex-col gap-3 w-full">
+                    <FooterLink to="/disclaimer" label="Disclaimer" icon={<AlertCircle size={14} />} />
+                    <FooterLink to="/faq" label="FAQ" icon={<HelpCircle size={14} />} />
+                    <FooterLink to="/privacy" label="Privacy Policy" icon={<Shield size={14} />} />
+                    <FooterLink to="/terms" label="Terms & Conditions" icon={<FileText size={14} />} />
+                </div>
+             </div>
 
-          {/* Column 3: Follow Us */}
-          <div className="flex flex-col items-center">
-            <h3 className="text-lg font-bold mb-6 font-serif text-accent-400 tracking-wider uppercase text-center">Follow Us</h3>
-            <div className="grid grid-cols-2 gap-4">
-                <SocialLink href="#" icon={<TiktokIcon className="w-4 h-4" />} label="TikTok" />
-                <SocialLink href="#" icon={<Facebook size={16} />} label="Facebook" />
-                <SocialLink href="#" icon={<Instagram size={16} />} label="Instagram" />
-                <SocialLink href="#" icon={<Youtube size={16} />} label="YouTube" />
-                <SocialLink href="#" icon={<PinterestIcon className="w-4 h-4" />} label="Pinterest" />
-            </div>
+             {/* Follow Us */}
+             <div className="flex flex-col items-start w-full">
+                <h3 className="text-lg md:text-xl font-serif font-bold text-white mb-6 relative inline-block">
+                    Follow Us
+                    <div className="absolute -bottom-2 left-0 w-8 md:w-12 h-1 bg-accent-500 rounded-full"></div>
+                </h3>
+                <div className="flex flex-col gap-3 w-full">
+                    <FooterLink label="TikTok" icon={<TiktokIcon className="w-3.5 h-3.5" />} />
+                    <FooterLink label="Facebook" icon={<Facebook size={14} />} />
+                    <FooterLink label="Instagram" icon={<Instagram size={14} />} />
+                    <FooterLink label="YouTube" icon={<Youtube size={14} />} />
+                    <FooterLink label="Pinterest" icon={<PinterestIcon className="w-3.5 h-3.5" />} />
+                </div>
+             </div>
+
           </div>
         </div>
         
-        <div className="border-t border-white/5 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center text-slate-500 text-[10px] gap-6">
-          <p className="font-bold tracking-[0.3em] uppercase">&copy; {new Date().getFullYear()} JAADU KI KAAT. All rights reserved.</p>
-          <Link to="/admin" className="inline-flex items-center space-x-2 hover:text-accent-400 transition-colors uppercase tracking-[0.3em] font-bold">
-              <Lock size={12} className="inline" /> 
-              <span>Admin</span>
+        {/* Footer Bottom */}
+        <div className="border-t border-white/5 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center text-slate-500 text-xs gap-4">
+          <p className="font-medium tracking-wide text-center md:text-left">&copy; {new Date().getFullYear()} JAADU KI KAAT. All rights reserved.</p>
+          <Link to="/admin" className="inline-flex items-center space-x-2 hover:text-accent-400 transition-colors opacity-50 hover:opacity-100">
+              <Lock size={12} /> 
+              <span className="uppercase tracking-widest font-bold">Admin Access</span>
           </Link>
         </div>
       </div>
@@ -73,13 +85,31 @@ const Footer: React.FC = () => {
   );
 };
 
-const SocialLink = ({ href, icon, label }: { href: string, icon: React.ReactNode, label: string }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center group w-fit">
-        <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-accent-500 group-hover:text-white transition-all duration-300">
-            {icon}
-        </div>
-        <span className="ml-3 text-sm font-medium text-slate-400 group-hover:text-accent-400 transition-colors">{label}</span>
-    </a>
-);
+interface FooterLinkProps {
+    label: string;
+    icon: React.ReactNode;
+    to?: string;
+    href?: string;
+}
+
+const FooterLink = ({ label, icon, to, href }: FooterLinkProps) => {
+    const commonClasses = "flex items-center justify-center gap-3 bg-white/5 hover:bg-accent-600 border border-white/5 hover:border-accent-500 px-3 py-3 rounded-xl transition-all duration-300 group shadow-sm hover:shadow-lg w-full max-w-[180px]";
+
+    const content = (
+        <>
+            <span className="text-slate-400 group-hover:text-white transition-colors shrink-0">{icon}</span>
+            <span className="text-slate-300 text-[10px] md:text-xs font-bold uppercase tracking-wider group-hover:text-white transition-colors truncate">{label}</span>
+        </>
+    );
+
+    if (to) {
+        return <Link to={to} className={commonClasses}>{content}</Link>;
+    }
+    return (
+        <a href={href || "#"} target="_blank" rel="noopener noreferrer" className={commonClasses}>
+            {content}
+        </a>
+    );
+};
 
 export default Footer;

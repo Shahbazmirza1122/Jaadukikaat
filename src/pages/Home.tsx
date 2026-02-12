@@ -1,10 +1,10 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Sun, ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Mail, Phone, User, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, MapPin, Globe, Users, MessageSquare, Check, ChevronLeft, ChevronRight, ShoppingBag, Tag } from 'lucide-react';
 import { BlogPost } from '../../types';
 import { products as staticProducts, Product } from '../../data/products';
 import { submitToGoogleSheet } from '../../services/sheetService';
-import SpiritualGuide from '../../components/SpiritualGuide';
 import { supabase } from '../../lib/supabase';
 import { useCart } from '../../context/CartContext';
 
