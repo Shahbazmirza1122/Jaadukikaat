@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { Sun, ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Mail, Phone, User, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, MapPin, Globe, Users, MessageSquare, Check, ChevronLeft, ChevronRight, ShoppingBag, Tag } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Mail, Phone, User, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, Users, ChevronLeft, ChevronRight, ShoppingBag, Tag } from 'lucide-react';
 import { BlogPost } from '../types';
 import { products as staticProducts, Product } from '../data/products';
 import { submitToGoogleSheet } from '../services/sheetService';
@@ -10,12 +10,13 @@ import { useCart } from '../context/CartContext';
 
 const Home: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [productsList, setProductsList] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const location = useLocation();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const navigate = useNavigate();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const productScrollRef = useRef<HTMLDivElement>(null);
   const { addToCart } = useCart();
   const [wishlist, setWishlist] = useState<string[]>([]);
@@ -1076,7 +1077,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Istikhara, Ism-e-Azam, Prayer, Contact Modals */}
+      {/* Istikhara Modal */}
       {isIstikharaModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsIstikharaModalOpen(false)}></div>
@@ -1110,6 +1111,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
+      {/* Ism-e-Azam Modal */}
       {isIsmeAzamModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsIsmeAzamModalOpen(false)}></div>
@@ -1143,6 +1145,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
+      {/* Prayer Request Modal */}
       {isPrayerRequestModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsPrayerRequestModalOpen(false)}></div>
@@ -1188,6 +1191,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
+      {/* Contact Modal */}
       {isContactModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsContactModalOpen(false)}></div>
