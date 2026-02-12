@@ -443,7 +443,7 @@ const Home: React.FC = () => {
     setIsmeAzamMessage('');
   };
 
-  // Prayer Request Handler (FIXED)
+  // Prayer Request Handler
   const handlePrayerRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsConsultSubmitting(true);
@@ -1078,31 +1078,67 @@ const Home: React.FC = () => {
 
       {/* Istikhara, Ism-e-Azam, Prayer, Contact Modals */}
       {isIstikharaModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsIstikharaModalOpen(false)}></div>
-           <div className="bg-white rounded-3xl w-full max-w-lg relative z-10 p-6">
-                <button onClick={() => setIsIstikharaModalOpen(false)} className="absolute top-4 right-4"><X /></button>
-                <h3 className="text-xl font-serif font-bold mb-4">Istikhara Request</h3>
-                <form onSubmit={handleIstikharaSubmit} className="space-y-3">
-                    <input className="w-full p-3 border rounded-lg" placeholder="Name" value={istikharaName} onChange={e=>setIstikharaName(e.target.value)} required />
-                    <input className="w-full p-3 border rounded-lg" placeholder="Mother's Name" value={istikharaMotherName} onChange={e=>setIstikharaMotherName(e.target.value)} required />
-                    <textarea className="w-full p-3 border rounded-lg" placeholder="Purpose" value={istikharaPurpose} onChange={e=>setIstikharaPurpose(e.target.value)} required />
-                    <button className="w-full bg-spirit-900 text-white py-3 rounded-lg">Submit</button>
-                </form>
+           <div className="bg-white rounded-3xl w-full max-w-lg relative z-10 shadow-xl border border-slate-100 max-h-[90vh] flex flex-col">
+                <div className="bg-spirit-900 px-6 py-4 flex justify-between items-center shrink-0 rounded-t-3xl">
+                    <h3 className="text-lg font-serif font-bold text-white">Istikhara Request</h3>
+                    <button onClick={() => setIsIstikharaModalOpen(false)} className="text-slate-400 hover:text-white transition-colors"><X size={20} /></button>
+                </div>
+                <div className="p-6 overflow-y-auto custom-scrollbar">
+                    <form onSubmit={handleIstikharaSubmit} className="space-y-4">
+                        <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Full Name" value={istikharaName} onChange={(e) => setIstikharaName(e.target.value)} required />
+                        <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Mother's Name" value={istikharaMotherName} onChange={(e) => setIstikharaMotherName(e.target.value)} required />
+                        <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-500 focus:ring-2 focus:ring-accent-500 transition" placeholder="Date of Birth" value={istikharaDob} onChange={(e) => setIstikharaDob(e.target.value)} required />
+                        <div className="grid grid-cols-2 gap-4">
+                            <input type="tel" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Phone Number" value={istikharaPhone} onChange={(e) => setIstikharaPhone(e.target.value)} required />
+                            <input type="email" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Email" value={istikharaEmail} onChange={(e) => setIstikharaEmail(e.target.value)} required />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="City" value={istikharaCity} onChange={(e) => setIstikharaCity(e.target.value)} required />
+                            <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Country" value={istikharaCountry} onChange={(e) => setIstikharaCountry(e.target.value)} required />
+                        </div>
+                        <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Purpose (e.g. Marriage, Business)" value={istikharaPurpose} onChange={(e) => setIstikharaPurpose(e.target.value)} required />
+                        <textarea className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Detailed Message / Situation..." value={istikharaMessage} onChange={(e) => setIstikharaMessage(e.target.value)} rows={3} required />
+                        
+                        <button type="submit" disabled={isConsultSubmitting} className="w-full bg-spirit-900 text-white font-bold py-3 rounded-xl hover:bg-spirit-800 transition flex justify-center items-center gap-2">
+                            {isConsultSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Submit Request'}
+                        </button>
+                    </form>
+                </div>
            </div>
         </div>
       )}
 
       {isIsmeAzamModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsIsmeAzamModalOpen(false)}></div>
-           <div className="bg-white rounded-3xl w-full max-w-lg relative z-10 p-6">
-                <button onClick={() => setIsIsmeAzamModalOpen(false)} className="absolute top-4 right-4"><X /></button>
-                <h3 className="text-xl font-serif font-bold mb-4">Ism-e-Azam Request</h3>
-                <form onSubmit={handleIsmeAzamSubmit} className="space-y-3">
-                    <input className="w-full p-3 border rounded-lg" placeholder="Name" value={ismeAzamName} onChange={e=>setIsmeAzamName(e.target.value)} required />
-                    <button className="w-full bg-spirit-900 text-white py-3 rounded-lg">Calculate</button>
-                </form>
+           <div className="bg-white rounded-3xl w-full max-w-lg relative z-10 shadow-xl border border-slate-100 max-h-[90vh] flex flex-col">
+                <div className="bg-spirit-900 px-6 py-4 flex justify-between items-center shrink-0 rounded-t-3xl">
+                    <h3 className="text-lg font-serif font-bold text-white">Ism-e-Azam Calculation</h3>
+                    <button onClick={() => setIsIsmeAzamModalOpen(false)} className="text-slate-400 hover:text-white transition-colors"><X size={20} /></button>
+                </div>
+                <div className="p-6 overflow-y-auto custom-scrollbar">
+                    <form onSubmit={handleIsmeAzamSubmit} className="space-y-4">
+                        <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Full Name" value={ismeAzamName} onChange={(e) => setIsmeAzamName(e.target.value)} required />
+                        <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Mother's Name" value={ismeAzamMotherName} onChange={(e) => setIsmeAzamMotherName(e.target.value)} required />
+                        <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-500 focus:ring-2 focus:ring-accent-500 transition" placeholder="Date of Birth" value={ismeAzamDob} onChange={(e) => setIsmeAzamDob(e.target.value)} required />
+                        <div className="grid grid-cols-2 gap-4">
+                            <input type="tel" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Phone Number" value={ismeAzamPhone} onChange={(e) => setIsmeAzamPhone(e.target.value)} required />
+                            <input type="email" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Email" value={ismeAzamEmail} onChange={(e) => setIsmeAzamEmail(e.target.value)} required />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="City" value={ismeAzamCity} onChange={(e) => setIsmeAzamCity(e.target.value)} required />
+                            <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Country" value={ismeAzamCountry} onChange={(e) => setIsmeAzamCountry(e.target.value)} required />
+                        </div>
+                        <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Purpose / Problem" value={ismeAzamPurpose} onChange={(e) => setIsmeAzamPurpose(e.target.value)} required />
+                        <textarea className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none focus:ring-2 focus:ring-accent-500 transition" placeholder="Additional Details..." value={ismeAzamMessage} onChange={(e) => setIsmeAzamMessage(e.target.value)} rows={3} required />
+
+                        <button type="submit" disabled={isConsultSubmitting} className="w-full bg-accent-500 text-white font-bold py-3 rounded-xl hover:bg-accent-600 transition flex justify-center items-center gap-2">
+                            {isConsultSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Calculate Ism-e-Azam'}
+                        </button>
+                    </form>
+                </div>
            </div>
         </div>
       )}
@@ -1155,13 +1191,18 @@ const Home: React.FC = () => {
       {isContactModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsContactModalOpen(false)}></div>
-           <div className="bg-white rounded-3xl w-full max-w-lg relative z-10 p-6">
-                <button onClick={() => setIsContactModalOpen(false)} className="absolute top-4 right-4"><X /></button>
-                <h3 className="text-xl font-serif font-bold mb-4">Contact Us</h3>
-                <form onSubmit={handleContactSubmit} className="space-y-3">
-                    <input className="w-full p-3 border rounded-lg" placeholder="Email" value={contactEmail} onChange={e=>setContactEmail(e.target.value)} required />
-                    <textarea className="w-full p-3 border rounded-lg" placeholder="Message" value={contactMessage} onChange={e=>setContactMessage(e.target.value)} required />
-                    <button className="w-full bg-spirit-900 text-white py-3 rounded-lg">Send</button>
+           <div className="bg-white rounded-3xl w-full max-w-lg relative z-10 shadow-xl border border-slate-100 p-6 flex flex-col">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-serif font-bold text-spirit-900">Contact Us</h3>
+                    <button onClick={() => setIsContactModalOpen(false)} className="text-slate-400 hover:text-spirit-900 transition-colors"><X size={20} /></button>
+                </div>
+                <form onSubmit={handleContactSubmit} className="space-y-4">
+                    <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-spirit-500 transition" placeholder="Email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required />
+                    <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-spirit-500 transition" placeholder="Phone Number" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} required />
+                    <textarea className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none focus:ring-2 focus:ring-spirit-500 transition" placeholder="Message" value={contactMessage} onChange={(e) => setContactMessage(e.target.value)} rows={4} required />
+                    <button type="submit" disabled={isConsultSubmitting} className="w-full bg-spirit-900 text-white font-bold py-3 rounded-xl hover:bg-spirit-800 transition flex justify-center items-center gap-2">
+                        {isConsultSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Send Message'}
+                    </button>
                 </form>
            </div>
         </div>
