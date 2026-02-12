@@ -158,6 +158,9 @@ const Blog: React.FC = () => {
             setLatest(null);
             setPosts([]);
         }
+        
+        // Simulate network delay for better UX on fast connections if needed, or remove for production
+        // setTimeout(() => setLoading(false), 500); 
         setLoading(false);
     };
 
@@ -190,7 +193,43 @@ const Blog: React.FC = () => {
         )}
 
         {loading ? (
-             <div className="text-center py-20 text-gray-500">Loading Journal...</div>
+             <div className="animate-pulse space-y-12">
+                {/* Featured Post Skeleton */}
+                <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-spirit-100 h-[400px] lg:h-[350px] flex flex-col lg:flex-row">
+                    <div className="h-64 lg:h-full lg:w-2/5 bg-slate-200"></div>
+                    <div className="p-8 flex flex-col lg:w-3/5 space-y-4">
+                        <div className="flex gap-4">
+                            <div className="h-6 w-24 bg-slate-200 rounded-full"></div>
+                            <div className="h-6 w-32 bg-slate-200 rounded-full"></div>
+                        </div>
+                        <div className="h-10 w-3/4 bg-slate-200 rounded-xl"></div>
+                        <div className="space-y-2 flex-grow">
+                            <div className="h-4 w-full bg-slate-200 rounded"></div>
+                            <div className="h-4 w-full bg-slate-200 rounded"></div>
+                            <div className="h-4 w-2/3 bg-slate-200 rounded"></div>
+                        </div>
+                        <div className="h-6 w-32 bg-slate-200 rounded pt-4"></div>
+                    </div>
+                </div>
+
+                {/* Grid Skeletons */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {Array(6).fill(0).map((_, i) => (
+                        <div key={i} className="bg-white rounded-xl overflow-hidden shadow-sm border border-spirit-100 h-[400px] flex flex-col">
+                            <div className="h-48 bg-slate-200"></div>
+                            <div className="p-6 flex flex-col flex-grow space-y-4">
+                                <div className="h-4 w-1/3 bg-slate-200 rounded"></div>
+                                <div className="h-8 w-full bg-slate-200 rounded"></div>
+                                <div className="space-y-2 flex-grow">
+                                    <div className="h-4 w-full bg-slate-200 rounded"></div>
+                                    <div className="h-4 w-2/3 bg-slate-200 rounded"></div>
+                                </div>
+                                <div className="h-4 w-24 bg-slate-200 rounded"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+             </div>
         ) : (
             <>
                 {latest && (

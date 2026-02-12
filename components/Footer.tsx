@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Youtube, Mail, Lock, AlertCircle, HelpCircle, Shield, FileText } from 'lucide-react';
+import { Facebook, Instagram, Youtube, Mail, Lock, AlertCircle, HelpCircle, Shield, FileText, ArrowRight } from 'lucide-react';
 
 // Custom SVGs
 const TiktokIcon = ({ className }: { className?: string }) => (
@@ -19,97 +19,169 @@ const Footer: React.FC = () => {
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-spirit-500/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/4 pointer-events-none"></div>
       
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="flex flex-col md:grid md:grid-cols-3 md:gap-12 gap-12">
+        
+        {/* ================= MOBILE LAYOUT (Boxed Style) ================= */}
+        <div className="md:hidden flex flex-col gap-12">
           
-          {/* Brand Section */}
-          <div className="flex flex-col items-center md:items-start text-center md:text-left">
+          {/* Brand Section (Mobile) */}
+          <div className="flex flex-col items-center text-center">
             <div className="mb-6 bg-white/5 p-4 rounded-3xl backdrop-blur-sm border border-white/10 inline-block shadow-xl">
-               <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1770399481/Jaadu_Ki-removebg-preview_wnzo57.png" alt="Jaadu ki kaat Logo" className="h-24 md:h-28" />
+               <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1770399481/Jaadu_Ki-removebg-preview_wnzo57.png" alt="Jaadu ki kaat Logo" className="h-24" />
             </div>
             <p className="text-slate-300 text-sm leading-relaxed max-w-sm font-light mb-6">
-              Illuminating paths and identifying spiritual hurdles since 2024. Your journey to inner Shifa begins here with absolute compassion.
+              Illuminating paths and identifying spiritual hurdles since 2024. Your journey to inner Shifa begins here.
             </p>
             <div>
-                <a href="mailto:Info@jaadukikaat.com" className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-white/5 border border-white/10 hover:bg-accent-500 hover:border-accent-500 transition-all group shadow-lg hover:shadow-accent-500/25">
+                <a href="mailto:Info@jaadukikaat.com" className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-white/5 border border-white/10 hover:bg-accent-500 hover:border-accent-500 transition-all group shadow-lg">
                     <Mail size={18} className="text-accent-400 group-hover:text-white transition-colors" />
                     <span className="font-bold tracking-wide text-sm group-hover:text-white text-slate-300">Info@jaadukikaat.com</span>
                 </a>
             </div>
           </div>
           
-          {/* Mobile: Grid for Links (Parallel on Mobile) */}
-          <div className="md:col-span-2 grid grid-cols-2 gap-4 md:gap-8">
-             
+          {/* Parallel Grid for Links & Socials (Mobile) */}
+          <div className="grid grid-cols-2 gap-4">
              {/* Quick Links */}
              <div className="flex flex-col items-start w-full">
-                <h3 className="text-lg md:text-xl font-serif font-bold text-white mb-6 relative inline-block">
+                <h3 className="text-lg font-serif font-bold text-white mb-6 relative inline-block">
                     Quick Links
-                    <div className="absolute -bottom-2 left-0 w-8 md:w-12 h-1 bg-accent-500 rounded-full"></div>
+                    <div className="absolute -bottom-2 left-0 w-8 h-1 bg-accent-500 rounded-full"></div>
                 </h3>
                 <div className="flex flex-col gap-3 w-full">
-                    <FooterLink to="/disclaimer" label="Disclaimer" icon={<AlertCircle size={14} />} />
-                    <FooterLink to="/faq" label="FAQ" icon={<HelpCircle size={14} />} />
-                    <FooterLink to="/privacy" label="Privacy Policy" icon={<Shield size={14} />} />
-                    <FooterLink to="/terms" label="Terms & Conditions" icon={<FileText size={14} />} />
+                    <MobileFooterLink to="/disclaimer" label="Disclaimer" icon={<AlertCircle size={14} />} />
+                    <MobileFooterLink to="/faq" label="FAQ" icon={<HelpCircle size={14} />} />
+                    <MobileFooterLink to="/privacy" label="Privacy Policy" icon={<Shield size={14} />} />
+                    <MobileFooterLink to="/terms" label="Terms & Conditions" icon={<FileText size={14} />} />
                 </div>
              </div>
 
              {/* Follow Us */}
              <div className="flex flex-col items-start w-full">
-                <h3 className="text-lg md:text-xl font-serif font-bold text-white mb-6 relative inline-block">
+                <h3 className="text-lg font-serif font-bold text-white mb-6 relative inline-block">
                     Follow Us
-                    <div className="absolute -bottom-2 left-0 w-8 md:w-12 h-1 bg-accent-500 rounded-full"></div>
+                    <div className="absolute -bottom-2 left-0 w-8 h-1 bg-accent-500 rounded-full"></div>
                 </h3>
                 <div className="flex flex-col gap-3 w-full">
-                    <FooterLink label="TikTok" icon={<TiktokIcon className="w-3.5 h-3.5" />} />
-                    <FooterLink label="Facebook" icon={<Facebook size={14} />} />
-                    <FooterLink label="Instagram" icon={<Instagram size={14} />} />
-                    <FooterLink label="YouTube" icon={<Youtube size={14} />} />
-                    <FooterLink label="Pinterest" icon={<PinterestIcon className="w-3.5 h-3.5" />} />
+                    <MobileFooterLink label="TikTok" icon={<TiktokIcon className="w-3.5 h-3.5" />} />
+                    <MobileFooterLink label="Facebook" icon={<Facebook size={14} />} />
+                    <MobileFooterLink label="Instagram" icon={<Instagram size={14} />} />
+                    <MobileFooterLink label="YouTube" icon={<Youtube size={14} />} />
+                    <MobileFooterLink label="Pinterest" icon={<PinterestIcon className="w-3.5 h-3.5" />} />
                 </div>
              </div>
-
           </div>
         </div>
+
+
+        {/* ================= DESKTOP LAYOUT (Classic Clean Style) ================= */}
+        <div className="hidden md:grid grid-cols-4 gap-12">
+            
+            {/* Column 1: Brand Info */}
+            <div className="col-span-1">
+                 <Link to="/" className="inline-block mb-6">
+                    <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1770399481/Jaadu_Ki-removebg-preview_wnzo57.png" alt="Logo" className="h-28 -ml-2" />
+                 </Link>
+                 <p className="text-slate-400 text-sm leading-relaxed mb-6 font-light">
+                     A sanctuary for spiritual healing, offering guidance through ancient wisdom and modern understanding. 
+                 </p>
+                 <a href="mailto:Info@jaadukikaat.com" className="flex items-center gap-2 text-accent-400 font-bold hover:text-white transition-colors group">
+                    <Mail size={16} /> <span>Info@jaadukikaat.com</span>
+                 </a>
+            </div>
+
+            {/* Column 2: Quick Links */}
+            <div className="pt-4">
+                <h3 className="text-lg font-serif font-bold text-white mb-6">Quick Links</h3>
+                <ul className="space-y-4">
+                    <DesktopFooterLink to="/disclaimer" label="Disclaimer" />
+                    <DesktopFooterLink to="/faq" label="FAQ" />
+                    <DesktopFooterLink to="/privacy" label="Privacy Policy" />
+                    <DesktopFooterLink to="/terms" label="Terms & Conditions" />
+                </ul>
+            </div>
+
+            {/* Column 3: Services */}
+            <div className="pt-4">
+                 <h3 className="text-lg font-serif font-bold text-white mb-6">Our Services</h3>
+                 <ul className="space-y-4">
+                    <DesktopFooterLink to="/#services" label="Rohani Ilaj" />
+                    <DesktopFooterLink to="/#services" label="Istikhara Service" />
+                    <DesktopFooterLink to="/store" label="Spiritual Store" />
+                    <DesktopFooterLink to="/blog" label="Wisdom Blog" />
+                </ul>
+            </div>
+
+            {/* Column 4: Follow Us */}
+            <div className="pt-4">
+                <h3 className="text-lg font-serif font-bold text-white mb-6">Follow Us</h3>
+                <ul className="space-y-4">
+                     <DesktopSocialLink label="TikTok" href="#" icon={<TiktokIcon className="w-4 h-4" />} />
+                     <DesktopSocialLink label="Facebook" href="#" icon={<Facebook size={18} />} />
+                     <DesktopSocialLink label="Instagram" href="#" icon={<Instagram size={18} />} />
+                     <DesktopSocialLink label="YouTube" href="#" icon={<Youtube size={18} />} />
+                     <DesktopSocialLink label="Pinterest" href="#" icon={<PinterestIcon className="w-4 h-4" />} />
+                </ul>
+            </div>
+
+        </div>
         
-        {/* Footer Bottom */}
+        {/* Footer Bottom (Shared) */}
         <div className="border-t border-white/5 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center text-slate-500 text-xs gap-4">
           <p className="font-medium tracking-wide text-center md:text-left">&copy; {new Date().getFullYear()} JAADU KI KAAT. All rights reserved.</p>
-          <Link to="/admin" className="inline-flex items-center space-x-2 hover:text-accent-400 transition-colors opacity-50 hover:opacity-100">
-              <Lock size={12} /> 
-              <span className="uppercase tracking-widest font-bold">Admin Access</span>
-          </Link>
+          <div className="flex items-center gap-6">
+             <span className="hidden md:inline">Designed with Nur</span>
+             <Link to="/admin" className="inline-flex items-center space-x-2 hover:text-accent-400 transition-colors opacity-50 hover:opacity-100">
+                <Lock size={12} /> 
+                <span className="uppercase tracking-widest font-bold">Admin</span>
+             </Link>
+          </div>
         </div>
+
       </div>
     </footer>
   );
 };
 
-interface FooterLinkProps {
+// --- Mobile Components (Boxed Style) ---
+interface MobileLinkProps {
     label: string;
     icon: React.ReactNode;
     to?: string;
     href?: string;
 }
 
-const FooterLink = ({ label, icon, to, href }: FooterLinkProps) => {
+const MobileFooterLink = ({ label, icon, to, href }: MobileLinkProps) => {
     const commonClasses = "flex items-center justify-center gap-3 bg-white/5 hover:bg-accent-600 border border-white/5 hover:border-accent-500 px-3 py-3 rounded-xl transition-all duration-300 group shadow-sm hover:shadow-lg w-full max-w-[180px]";
-
     const content = (
         <>
             <span className="text-slate-400 group-hover:text-white transition-colors shrink-0">{icon}</span>
-            <span className="text-slate-300 text-[10px] md:text-xs font-bold uppercase tracking-wider group-hover:text-white transition-colors truncate">{label}</span>
+            <span className="text-slate-300 text-[10px] font-bold uppercase tracking-wider group-hover:text-white transition-colors truncate">{label}</span>
         </>
     );
 
-    if (to) {
-        return <Link to={to} className={commonClasses}>{content}</Link>;
-    }
-    return (
-        <a href={href || "#"} target="_blank" rel="noopener noreferrer" className={commonClasses}>
-            {content}
-        </a>
-    );
+    if (to) return <Link to={to} className={commonClasses}>{content}</Link>;
+    return <a href={href || "#"} target="_blank" rel="noopener noreferrer" className={commonClasses}>{content}</a>;
 };
+
+// --- Desktop Components (Clean Style) ---
+const DesktopFooterLink = ({ to, label }: { to: string, label: string }) => (
+    <li>
+        <Link to={to} className="text-slate-400 hover:text-accent-400 hover:translate-x-1 transition-all duration-300 inline-flex items-center gap-2 text-sm font-medium">
+            <ArrowRight size={12} className="opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+            {label}
+        </Link>
+    </li>
+);
+
+const DesktopSocialLink = ({ href, icon, label }: { href: string, icon: React.ReactNode, label: string }) => (
+    <li>
+        <a href={href} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-all duration-300 flex items-center gap-3 group">
+            <span className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-accent-500 group-hover:border-accent-500 transition-colors">
+                {icon}
+            </span>
+            <span className="text-sm font-medium group-hover:translate-x-1 transition-transform">{label}</span>
+        </a>
+    </li>
+);
 
 export default Footer;

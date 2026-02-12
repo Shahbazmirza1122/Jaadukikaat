@@ -231,7 +231,59 @@ const BlogPostPage: React.FC = () => {
     }, 1000);
   };
 
-  if (loading) return <div className="min-h-screen bg-spirit-50 pt-24 text-center">Loading article...</div>;
+  if (loading) {
+    return (
+        <div className="bg-spirit-50 min-h-screen pt-24 pb-20">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-pulse">
+                {/* Header Actions Skeleton */}
+                <div className="flex justify-between mb-6">
+                    <div className="h-6 w-32 bg-slate-200 rounded"></div>
+                    <div className="h-8 w-32 bg-slate-200 rounded-lg"></div>
+                </div>
+
+                <div className="flex flex-col lg:flex-row gap-8 items-start">
+                    {/* Main Content Skeleton */}
+                    <div className="w-full lg:w-3/4 space-y-8">
+                        <div className="bg-white rounded-2xl shadow-sm border border-spirit-100 overflow-hidden">
+                            <div className="h-64 md:h-[500px] bg-slate-200 w-full"></div>
+                            <div className="p-8 md:p-12 space-y-6">
+                                <div className="flex gap-4">
+                                    <div className="h-6 w-24 bg-slate-200 rounded-full"></div>
+                                    <div className="h-6 w-32 bg-slate-200 rounded-full"></div>
+                                </div>
+                                <div className="h-12 w-3/4 bg-slate-200 rounded-xl"></div>
+                                <div className="space-y-4">
+                                    <div className="h-4 w-full bg-slate-200 rounded"></div>
+                                    <div className="h-4 w-full bg-slate-200 rounded"></div>
+                                    <div className="h-4 w-5/6 bg-slate-200 rounded"></div>
+                                    <div className="h-4 w-full bg-slate-200 rounded"></div>
+                                </div>
+                                <div className="pt-8 border-t border-gray-100">
+                                    <div className="h-6 w-48 bg-slate-200 rounded"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sidebar Skeleton */}
+                    <div className="w-full lg:w-1/4 space-y-8">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-spirit-100 h-32">
+                            <div className="h-6 w-1/2 bg-slate-200 rounded mb-4"></div>
+                            <div className="h-10 w-full bg-slate-200 rounded-lg"></div>
+                        </div>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-spirit-100 h-64">
+                            <div className="h-6 w-1/2 bg-slate-200 rounded mb-4"></div>
+                            <div className="space-y-3">
+                                {[1,2,3,4].map(i => <div key={i} className="h-8 w-full bg-slate-200 rounded"></div>)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+  }
+  
   if (!post) return null;
 
   return (
