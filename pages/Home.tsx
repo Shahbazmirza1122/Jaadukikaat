@@ -245,8 +245,8 @@ const Home: React.FC = () => {
   };
 
   const toggleWishlist = (id: string) => {
-    setWishlist(prev => 
-      prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]
+    setWishlist((prev) => 
+      prev.includes(id) ? prev.filter((pId) => pId !== id) : [...prev, id]
     );
   };
 
