@@ -10,12 +10,10 @@ import { useCart } from '../context/CartContext';
 
 const Home: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [productsList, setProductsList] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const location = useLocation();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const navigate = useNavigate();
   const productScrollRef = useRef<HTMLDivElement>(null);
   const { addToCart } = useCart();
