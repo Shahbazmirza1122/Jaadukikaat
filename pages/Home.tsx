@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Mail, Phone, User, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, Users, ChevronLeft, ChevronRight, ShoppingBag, Tag } from 'lucide-react';
@@ -1205,10 +1204,10 @@ const Home: React.FC = () => {
                     <button type="submit" disabled={isConsultSubmitting} className="w-full bg-spirit-900 text-white font-bold py-3 rounded-xl hover:bg-spirit-800 transition flex justify-center items-center gap-2">
                         {isConsultSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Send Message'}
                     </button>
-                </form>
+                    </form>
            </div>
         </div>
-      )}
+      )};
 
       {/* Success Modal */}
       {isSuccessModalOpen && (
