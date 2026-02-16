@@ -680,7 +680,7 @@ const Home: React.FC = () => {
                             </div>
                         </Link>
                     ))
-                )};
+                )}
                 
                 {/* Add a spacer at the end for better scrolling feel */}
                 <div className="min-w-[20px]"></div>
