@@ -737,7 +737,8 @@ const Home: React.FC = () => {
                                 </div>
                             </div>
                         </Link>
-                    ))
+                        );
+                    })
                 )}
                 
                 {/* Add a spacer at the end for better scrolling feel */}
