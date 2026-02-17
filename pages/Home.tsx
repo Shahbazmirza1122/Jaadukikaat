@@ -1,12 +1,67 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Mail, Phone, User, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, Users, ChevronLeft, ChevronRight, ShoppingBag, Tag } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Sparkles, Heart, Moon, BookOpen, Compass, Star, HandHeart, CircleArrowRight, Send, Lock, CreditCard, X, Loader2, Briefcase, FileText, CircleCheck, Users, ChevronLeft, ChevronRight, ShoppingBag, Tag, Book } from 'lucide-react';
 import { BlogPost } from '../types';
 import { products as staticProducts, Product } from '../data/products';
 import { submitToGoogleSheet } from '../services/sheetService';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
+
+// Dummy Data for Fallback
+const dummyBlogPosts: BlogPost[] = [
+  {
+    id: 'd1',
+    title: "Finding Stillness: The Power of a Silent Heart",
+    excerpt: "In an age of constant distraction, the ancient practice of cultivating inner silence offers a profound sanctuary. Discover how to quiet the mind.",
+    content: "",
+    author: "Imam Al-Ghazali",
+    date: "July 28, 2024",
+    imageUrl: "https://images.unsplash.com/photo-1475113548554-5a36f1f523d6?q=80&w=800&auto=format&fit=crop",
+    category: "Mindfulness",
+    isLatest: true
+  },
+  {
+    id: 'd2',
+    title: "The Alchemy of Dua: Turning Desires into Connection",
+    excerpt: "Dua is not merely a list of requests; it is the soul's conversation with its Creator. Learn how to transform your supplications.",
+    content: "",
+    author: "Rumi",
+    date: "July 22, 2024",
+    imageUrl: "https://images.unsplash.com/photo-1593225232335-3738b6f35334?q=80&w=800&auto=format&fit=crop",
+    category: "Spirituality"
+  },
+  {
+    id: 'd3',
+    title: "Decoding Dreams: A Spiritual Guide",
+    excerpt: "Our dreams are a sacred bridge to the subconscious. This guide provides an introduction to interpreting dream symbols.",
+    content: "",
+    author: "Ibn Sirin",
+    date: "July 15, 2024",
+    imageUrl: "https://images.unsplash.com/photo-1532325329166-d9b9333a469a?q=80&w=800&auto=format&fit=crop",
+    category: "Wisdom"
+  },
+  {
+    id: 'd4',
+    title: "The Evil Eye: Protection in the Modern Age",
+    excerpt: "Explore the ancient concept of the 'evil eye' (Nazar) and discover practical spiritual remedies and daily practices.",
+    content: "",
+    author: "Jaadu ki kaat",
+    date: "July 08, 2024",
+    imageUrl: "https://images.unsplash.com/photo-1559819225-3b2a578358ab?q=80&w=800&auto=format&fit=crop",
+    category: "Protection"
+  },
+  {
+    id: 'd5',
+    title: "Gratitude as a Gateway to Abundance",
+    excerpt: "Shifting your focus from what's lacking to what you have is the first step towards attracting more blessings.",
+    content: "",
+    author: "Yasmin Mogahed",
+    date: "July 01, 2024",
+    imageUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=800&auto=format&fit=crop",
+    category: "Spirituality"
+  }
+];
 
 const Home: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -44,9 +99,11 @@ const Home: React.FC = () => {
           .eq('status', 'published')
           .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error("Supabase blog fetch error:", error);
-        } else if (data) {
+        if (error || !data || data.length === 0) {
+            // Use dummy data if DB is empty or error occurs
+            console.log("Using fallback blog data");
+            setBlogPosts(dummyBlogPosts);
+        } else {
           setBlogPosts(data.map((p: any) => ({
             ...p,
             imageUrl: p.image_url || p.imageUrl,
@@ -54,7 +111,8 @@ const Home: React.FC = () => {
           })));
         }
       } catch (err) {
-        console.warn("Failed to fetch blogs (network/offline):", err);
+        console.warn("Failed to fetch blogs (network/offline), using fallback:", err);
+        setBlogPosts(dummyBlogPosts);
       }
     };
 
@@ -950,6 +1008,58 @@ const Home: React.FC = () => {
          </div>
       </section>
 
+      {/* NEW: Blog Carousel Section */}
+      {blogPosts.length > 0 && (
+        <section className="py-20 bg-white border-t border-slate-50 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 mb-12 text-center">
+             <span className="text-accent-600 font-bold tracking-[0.3em] uppercase text-xs mb-3 block">Sacred Knowledge</span>
+             <h2 className="text-4xl font-serif font-bold text-spirit-900">Wisdom & Insights</h2>
+          </div>
+
+          <div className="relative w-full overflow-hidden group">
+             {/* Gradient Masks for edges */}
+             <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+             <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+
+             <div className="flex w-max animate-marquee hover:[animation-play-state:paused] py-8">
+                {/* Original Set */}
+                {blogPosts.map((post) => (
+                   <div key={post.id} className="w-[300px] md:w-[400px] mx-4 md:mx-6 shrink-0 bg-white rounded-3xl border border-spirit-100 shadow-lg overflow-hidden flex flex-col h-[450px]">
+                      <div className="h-56 relative overflow-hidden">
+                         <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" />
+                         <span className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-800 shadow-sm">{post.category || 'Wisdom'}</span>
+                      </div>
+                      <div className="p-6 flex flex-col flex-grow">
+                         <h3 className="font-serif font-bold text-xl text-spirit-900 mb-3 line-clamp-2 leading-tight">{post.title}</h3>
+                         <p className="text-slate-500 text-sm line-clamp-3 mb-3 flex-grow">{post.excerpt}</p>
+                         <Link to={`/blog/${post.id}`} className="w-full bg-spirit-50 text-spirit-900 font-bold py-3 rounded-xl hover:bg-spirit-900 hover:text-white transition-colors flex items-center justify-center gap-2 text-sm mt-auto group/btn">
+                            <Book size={16} /> <span>Read Article</span> <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                         </Link>
+                      </div>
+                   </div>
+                ))}
+                
+                {/* Duplicate Set for Seamless Loop */}
+                {blogPosts.map((post) => (
+                   <div key={`dup-${post.id}`} className="w-[300px] md:w-[400px] mx-4 md:mx-6 shrink-0 bg-white rounded-3xl border border-spirit-100 shadow-lg overflow-hidden flex flex-col h-[450px]">
+                      <div className="h-56 relative overflow-hidden">
+                         <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" />
+                         <span className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-800 shadow-sm">{post.category || 'Wisdom'}</span>
+                      </div>
+                      <div className="p-6 flex flex-col flex-grow">
+                         <h3 className="font-serif font-bold text-xl text-spirit-900 mb-3 line-clamp-2 leading-tight">{post.title}</h3>
+                         <p className="text-slate-500 text-sm line-clamp-3 mb-3 flex-grow">{post.excerpt}</p>
+                         <Link to={`/blog/${post.id}`} className="w-full bg-spirit-50 text-spirit-900 font-bold py-3 rounded-xl hover:bg-spirit-900 hover:text-white transition-colors flex items-center justify-center gap-2 text-sm mt-auto group/btn">
+                            <Book size={16} /> <span>Read Article</span> <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                         </Link>
+                      </div>
+                   </div>
+                ))}
+             </div>
+          </div>
+        </section>
+      )}
+
       {/* Insights Section */}
       <section id="contact" className="py-24 bg-white border-t border-slate-50">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-stretch">
@@ -1075,7 +1185,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Istikhara Modal */}
+      {/* Istikhara, Ism-e-Azam, Prayer, Contact Modals */}
       {isIstikharaModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsIstikharaModalOpen(false)}></div>
@@ -1109,7 +1219,6 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Ism-e-Azam Modal */}
       {isIsmeAzamModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsIsmeAzamModalOpen(false)}></div>
@@ -1143,7 +1252,6 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Prayer Request Modal */}
       {isPrayerRequestModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in overflow-hidden">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsPrayerRequestModalOpen(false)}></div>
@@ -1189,7 +1297,6 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Contact Modal */}
       {isContactModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 animate-fade-in">
            <div className="absolute inset-0 bg-spirit-900/90 backdrop-blur-sm" onClick={() => setIsContactModalOpen(false)}></div>
