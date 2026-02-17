@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 
 const DailyDuaa: React.FC = () => {
@@ -21,8 +22,8 @@ const DailyDuaa: React.FC = () => {
   return (
     <div className="w-full bg-accent-500 border-b border-white/10 h-10 flex relative z-40 shadow-xl overflow-hidden">
       {/* Left Static Label */}
-      <div className="bg-spirit-900 text-accent-100 px-6 flex items-center justify-center font-serif font-bold text-[10px] tracking-[0.3em] shrink-0 z-10 shadow-2xl h-full uppercase">
-        Sacred Wisdom
+      <div className="bg-spirit-900 text-accent-100 px-3 flex items-center justify-center font-serif font-bold text-[10px] tracking-[0.1em] shrink-0 z-10 shadow-2xl h-full uppercase">
+        Hadees E Rasool ( S.A.W )
       </div>
       
       {/* Right Scrolling Content */}

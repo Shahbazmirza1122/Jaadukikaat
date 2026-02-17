@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Lock, CircleCheck, Loader2, LogIn, CreditCard, ShieldCheck, Ticket, X, Smartphone } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Lock, CircleCheck, Loader2, LogIn, CreditCard, ShieldCheck, Ticket, X, Smartphone, Mail } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { submitToGoogleSheet, sendOrderEmail } from '../services/sheetService';
 import { supabase } from '../lib/supabase';
@@ -38,6 +38,9 @@ const CartPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
 
+  // Info Popup State
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
+
   // Check for direct checkout navigation
   useEffect(() => {
     if (location.state && location.state.openCheckout) {
@@ -52,6 +55,17 @@ const CartPage: React.FC = () => {
         setEmail(user.email || '');
     }
   }, [isAuthenticated, user]);
+
+  // Show Info Popup after 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+        // Only show if not already completed order
+        if (!orderComplete) {
+            setShowInfoPopup(true);
+        }
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [orderComplete]);
 
   // Recalculate discount if cart changes
   useEffect(() => {
@@ -296,7 +310,7 @@ const CartPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-20 bg-spirit-50">
+    <div className="min-h-screen pt-24 pb-20 bg-spirit-50 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-serif font-bold text-spirit-900 mb-8 flex items-center">
             <ShoppingBag className="mr-4" /> {isCheckout ? 'Secure Checkout' : 'Your Cart'}
@@ -624,6 +638,35 @@ const CartPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Info Popup - Appears after 5 seconds */}
+      {showInfoPopup && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center px-4 animate-fade-in">
+           <div className="absolute inset-0 bg-spirit-900/60 backdrop-blur-sm" onClick={() => setShowInfoPopup(false)}></div>
+           <div className="bg-white rounded-2xl p-8 max-w-md w-full relative z-10 shadow-2xl border border-slate-100 animate-fade-in-up text-center">
+                <button 
+                    onClick={() => setShowInfoPopup(false)} 
+                    className="absolute top-4 right-4 text-slate-400 hover:text-spirit-900 transition-colors"
+                >
+                    <X size={20} />
+                </button>
+                <div className="w-16 h-16 bg-accent-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Mail className="w-8 h-8 text-accent-600" />
+                </div>
+                <h3 className="text-xl font-serif font-bold text-spirit-900 mb-3">Delivery Information</h3>
+                <p className="text-slate-600 mb-6 leading-relaxed text-sm">
+                    Your order will be delivered through <strong>WhatsApp</strong> or <strong>Email</strong>. 
+                    Our spiritual team will reach out to you within a single working day to confirm details and provide guidance.
+                </p>
+                <button 
+                    onClick={() => setShowInfoPopup(false)}
+                    className="bg-spirit-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-spirit-800 transition w-full"
+                >
+                    Understood
+                </button>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
