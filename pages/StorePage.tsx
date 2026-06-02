@@ -136,85 +136,108 @@ const StorePage: React.FC = () => {
              <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-spirit-500 w-10 h-10" /></div>
         ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in-up">
-            {filteredProducts.map(product => {
+            {filteredProducts.map((product, index) => {
                 const onSale = isSaleActive(product);
                 const currentPrice = onSale ? product.salePrice : product.price;
 
                 return (
-                  <Link to={`/product/${product.id}`} key={product.id} className="bg-white rounded-[2rem] p-4 shadow-lg hover:shadow-2xl transition-all duration-300 group border border-spirit-100 flex flex-col h-full relative">
-                    {/* Image Area */}
-                    <div className="h-72 rounded-3xl overflow-hidden mb-6 relative bg-spirit-50">
-                        <img 
-                            src={product.image} 
-                            alt={product.name} 
-                            className={`w-full h-full object-cover transform group-hover:scale-110 transition duration-700 
-                                ${product.isOutOfStock ? 'grayscale opacity-70' : ''} 
-                                ${product.isBlurBeforeBuy ? 'blur-md scale-110' : ''}
-                            `} 
-                        />
-                        
-                        {/* Blur Overlay Label */}
-                        {product.isBlurBeforeBuy && !product.isOutOfStock && (
-                            <div className="absolute inset-0 flex items-center justify-center z-20">
-                                <div className="bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 text-white font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2">
-                                    <Lock size={12} /> Hidden Content
-                                </div>
-                            </div>
-                        )}
+                  <Link to={`/product/${product.id}`} key={product.id} className="bg-spirit-900 rounded-[2rem] shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col relative h-[480px]">
+                      {/* Price Tag */}
+                      <div className="absolute top-0 right-0 bg-accent-500 text-white font-bold text-sm px-6 py-2 rounded-tr-[2rem] rounded-bl-3xl z-30 shadow-lg">
+                          {currentPrice}
+                      </div>
 
-                        {/* Out of Stock Overlay */}
-                        {product.isOutOfStock && (
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
-                                <span className="bg-red-600 text-white px-4 py-2 rounded-full font-bold uppercase text-xs tracking-wider shadow-lg">Out of Stock</span>
-                            </div>
-                        )}
+                      {/* Sale Tag */}
+                      {onSale && !product.isOutOfStock && (
+                          <div className="absolute top-0 left-0 bg-red-500 text-white font-bold text-xs uppercase px-5 py-2 rounded-tl-[2rem] rounded-br-2xl z-30 shadow-lg flex items-center gap-1">
+                              <Tag size={12} /> Sale
+                          </div>
+                      )}
 
-                        <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-30">
-                            <span className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-900 shadow-sm">
-                                {product.category}
-                            </span>
-                            {onSale && !product.isOutOfStock && (
-                                <span className="bg-red-500 text-white px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1">
-                                    <Tag size={10} /> Sale
-                                </span>
-                            )}
-                        </div>
-                        
-                        {/* Overlay Actions */}
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 z-10">
-                           <button 
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }}
-                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg ${wishlist.includes(product.id) ? 'bg-red-500 text-white' : 'bg-white text-slate-700 hover:text-red-500'}`}
-                            >
-                              <Heart size={20} className={wishlist.includes(product.id) ? 'fill-current' : ''} />
-                           </button>
-                        </div>
-                    </div>
-                    
-                    {/* Content Area */}
-                    <div className="px-2 pb-2 flex-grow flex flex-col">
-                        <h3 className="font-serif font-bold text-xl text-spirit-900 mb-2 truncate group-hover:text-accent-600 transition-colors" title={product.name}>{product.name}</h3>
-                        <p className="text-slate-500 text-sm mb-4 line-clamp-2">{product.description}</p>
-                        <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-50">
-                            <div className="flex flex-col">
-                                {onSale ? (
-                                    <>
-                                        <span className="text-red-600 font-bold text-xl">{currentPrice}</span>
-                                        <span className="text-slate-400 text-sm line-through decoration-slate-400">{product.price}</span>
-                                    </>
-                                ) : (
-                                    <span className="text-accent-600 font-bold text-xl">{product.price}</span>
-                                )}
-                            </div>
-                            <button 
-                                onClick={(e) => handleAddToCart(e, product)}
-                                disabled={!!product.isOutOfStock}
-                                className={`px-5 py-2.5 rounded-full flex items-center gap-2 transition-colors text-sm font-bold shadow-md active:scale-95 ${product.isOutOfStock ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-spirit-900 text-white hover:bg-accent-600'}`}
-                            >
-                                <ShoppingBag size={16} /> {product.isOutOfStock ? 'Sold Out' : 'Add'}
-                            </button>
-                        </div>
-                    </div>
+                      {/* Image Area */}
+                      <div className="h-60 w-full relative rounded-t-[2rem] overflow-hidden bg-white/5 border-b border-white/10">
+                          <img 
+                              src={product.image} 
+                              alt={product.name}
+                              loading={index < 6 ? "eager" : "lazy"}
+                              className={`w-full h-full object-cover transform group-hover:scale-110 transition duration-700 
+                                  ${product.isOutOfStock ? 'grayscale opacity-70' : ''} 
+                                  ${product.isBlurBeforeBuy ? 'blur-md scale-110' : ''}
+                              `} 
+                          />
+                          
+                          {/* Blur Overlay Label */}
+                          {product.isBlurBeforeBuy && !product.isOutOfStock && (
+                              <div className="absolute inset-0 flex items-center justify-center z-20">
+                                  <div className="bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 text-white font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2">
+                                      <Lock size={12} /> Hidden Content
+                                  </div>
+                              </div>
+                          )}
+
+                          {/* Out of Stock Overlay */}
+                          {product.isOutOfStock && (
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
+                                  <span className="bg-red-600 text-white px-4 py-2 rounded-full font-bold uppercase text-xs tracking-wider shadow-lg">Out of Stock</span>
+                              </div>
+                          )}
+                          
+                          {/* Overlay Actions */}
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4 z-10">
+                             <button 
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }}
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg ${wishlist.includes(product.id) ? 'bg-red-500 text-white' : 'bg-white text-spirit-900 hover:text-red-500'}`}
+                              >
+                                <Heart size={20} className={wishlist.includes(product.id) ? 'fill-current' : ''} />
+                             </button>
+                          </div>
+                      </div>
+                      
+                      {/* Bottom Container */}
+                      <div className="p-4 flex-grow flex flex-col relative bg-spirit-900 rounded-b-[2rem]">
+                          <div className="border-[3px] border-accent-500 rounded-2xl p-4 flex-grow flex relative mb-2">
+                              {/* Left Column */}
+                              <div className="w-[58%] pr-3 flex flex-col">
+                                  <h3 className="font-sans font-bold text-lg leading-tight uppercase tracking-wide text-white mb-2 line-clamp-2">{product.name}</h3>
+                                  <p className="text-[10px] text-slate-300 line-clamp-4 leading-relaxed mb-auto">{product.description}</p>
+                                  <div className="flex text-yellow-400 text-sm mt-3 tracking-widest">
+                                      ★★★★★
+                                  </div>
+                              </div>
+
+                              {/* Divider */}
+                              <div className="w-[1px] bg-white/20 my-1"></div>
+
+                              {/* Right Column */}
+                              <div className="w-[42%] pl-3 flex flex-col justify-start gap-4 mt-1">
+                                  <div>
+                                      <div className="font-bold text-[8px] text-white/50 uppercase tracking-wider mb-0.5">Category</div>
+                                      <div className="text-[10px] text-white line-clamp-2 leading-tight">{product.category}</div>
+                                  </div>
+                                  <div>
+                                      <div className="font-bold text-[8px] text-white/50 uppercase tracking-wider mb-0.5">SKU</div>
+                                      <div className="text-[10px] text-white line-clamp-1 leading-tight">{product.sku}</div>
+                                  </div>
+                                  <div>
+                                      <div className="font-bold text-[8px] text-white/50 uppercase tracking-wider mb-0.5">Status</div>
+                                      <div className="text-[10px] text-white leading-tight">{product.isOutOfStock ? 'Sold Out' : 'Available'}</div>
+                                  </div>
+                              </div>
+
+                              {/* Button */}
+                              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-max z-30">
+                                  <button 
+                                      onClick={(e) => handleAddToCart(e, product)}
+                                      disabled={!!product.isOutOfStock}
+                                      className={`px-8 py-2 rounded-full font-bold text-xs shadow-xl uppercase tracking-wider transition-colors 
+                                          ${product.isOutOfStock ? 'bg-slate-500 text-slate-300 cursor-not-allowed border-none' : 'bg-white text-accent-600 hover:text-white hover:bg-accent-600 border border-transparent'}
+                                      `}
+                                  >
+                                      {product.isOutOfStock ? 'Sold Out' : 'Add to Cart'}
+                                  </button>
+                              </div>
+                          </div>
+                      </div>
                   </Link>
                 );
             })}

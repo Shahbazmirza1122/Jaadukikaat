@@ -1,19 +1,32 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Sun, ShoppingCart, User as UserIcon, LogOut, Package } from 'lucide-react';
+import { Menu, X, Sun, ShoppingCart, User as UserIcon, LogOut, Package, ChevronDown, ArrowDown, ArrowUp } from 'lucide-react';
 import DailyDuaa from './DailyDuaa';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
+  const [serviceCategories, setServiceCategories] = useState<{id: string, name: string, description: string, imageUrl: string}[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
   const { cartCount } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
+  
+  const servicesMenuRef = useRef<HTMLDivElement>(null);
+
+  const scrollServicesMenu = (direction: 'up' | 'down') => {
+    if (servicesMenuRef.current) {
+        // Approximate height of one row (card height + grid gap)
+        const scrollAmount = 250;
+        servicesMenuRef.current.scrollBy({ top: direction === 'down' ? scrollAmount : -scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,10 +36,37 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const fetchServiceCategories = async () => {
+    const { data, error } = await supabase
+      .from('service_categories')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data) {
+      setServiceCategories(data.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description,
+          imageUrl: c.image_url
+      })));
+    }
+  };
+
+  useEffect(() => {
+    fetchServiceCategories();
+  }, []);
+
+  const toggleServicesMenu = () => {
+    const newState = !servicesMenuOpen;
+    setServicesMenuOpen(newState);
+    if (newState) {
+      fetchServiceCategories();
+    }
+  };
+
   const navLinks = [
-    { label: 'Home', path: '/#top' },
     { label: 'About', path: '/#about' },
     { label: 'Services', path: '/#services' },
+    { label: 'Products', path: '/store' },
     { label: 'Contact', path: '/#contact' },
     { label: 'Blog', path: '/blog' },
   ];
@@ -61,32 +101,47 @@ const Header: React.FC = () => {
       <header 
         className={`relative z-[60] w-full transition-all duration-300 border-b ${
           scrolled 
-            ? 'bg-white/98 backdrop-blur-md shadow-lg py-2 border-slate-100' 
-            : 'bg-spirit-900/85 backdrop-blur-md py-4 border-white/5'
+            ? 'bg-white/98 backdrop-blur-md shadow-lg py-1 md:py-2 border-slate-100' 
+            : 'bg-spirit-900/85 backdrop-blur-md py-2 md:py-4 border-white/5'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <Link to="/" onClick={(e) => handleNavClick(e, '/#top')} className="flex items-center group">
-              <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1770399481/Jaadu_Ki-removebg-preview_wnzo57.png" alt="Jaadu ki kaat Logo" className={`transition-all duration-300 ${scrolled ? 'h-20 -my-4 invert' : 'h-24 -my-4'}`} />
+              <img src="https://res.cloudinary.com/dq0ccjs6y/image/upload/v1770399481/Jaadu_Ki-removebg-preview_wnzo57.png" alt="Jaadu ki kaat Logo" className={`transition-all duration-300 ${scrolled ? 'h-12 md:h-20 -my-2 md:-my-4 invert' : 'h-16 md:h-24 -my-2 md:-my-4'}`} />
             </Link>
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-8">
               <nav className="flex items-center space-x-8">
                 {navLinks.map((link) => (
-                  <Link
-                    key={link.label}
-                    to={link.path}
-                    onClick={(e) => handleNavClick(e, link.path)}
-                    className={`text-xs font-sans font-bold uppercase tracking-[0.2em] transition-all hover:scale-105 ${
-                      scrolled 
-                        ? 'text-slate-600 hover:text-accent-600' 
-                        : 'text-white/90 hover:text-accent-300 drop-shadow-sm'
-                    } ${location.hash === link.path.substring(1) || (link.path === '/blog' && location.pathname === '/blog') ? 'border-b-2 border-accent-500 pb-1 text-accent-600' : ''}`}
-                  >
-                    {link.label}
-                  </Link>
+                  <div key={link.label} className="relative group/nav">
+                    {link.label === 'Services' ? (
+                      <button
+                        onClick={toggleServicesMenu}
+                        className={`text-xs font-sans font-bold uppercase tracking-[0.2em] transition-all hover:scale-105 flex items-center ${
+                          scrolled 
+                            ? 'text-slate-600 hover:text-accent-600' 
+                            : 'text-white/90 hover:text-accent-300 drop-shadow-sm'
+                        } ${servicesMenuOpen ? 'text-accent-600' : ''}`}
+                      >
+                        {link.label}
+                        <ChevronDown size={14} className={`ml-1 transition-transform ${servicesMenuOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                    ) : (
+                      <Link
+                        to={link.path}
+                        onClick={(e) => handleNavClick(e, link.path)}
+                        className={`text-xs font-sans font-bold uppercase tracking-[0.2em] transition-all hover:scale-105 inline-block ${
+                          scrolled 
+                            ? 'text-slate-600 hover:text-accent-600' 
+                            : 'text-white/90 hover:text-accent-300 drop-shadow-sm'
+                        } ${location.hash === link.path.substring(1) || (link.path === '/blog' && location.pathname === '/blog') ? 'border-b-2 border-accent-500 pb-1 text-accent-600' : ''}`}
+                      >
+                        {link.label}
+                      </Link>
+                    )}
+                  </div>
                 ))}
               </nav>
 
@@ -242,6 +297,84 @@ const Header: React.FC = () => {
                     >
                         Login / Sign Up
                     </Link>
+                  )}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Services Full Width Mega Menu */}
+        {servicesMenuOpen && (
+          <div className="absolute top-full left-0 w-full bg-white shadow-2xl border-t border-slate-100 z-[80] animate-fade-in origin-top">
+            <div className="max-w-7xl mx-auto px-8 pt-8 pb-4 relative flex flex-col">
+              <button 
+                onClick={() => setServicesMenuOpen(false)}
+                className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-spirit-900 transition-colors z-[90]"
+                aria-label="Close services menu"
+              >
+                <X size={24} />
+              </button>
+              
+              <div className="mb-4 border-b border-slate-100 pb-4">
+                <h2 className="text-2xl font-serif font-bold text-spirit-900">Our Services</h2>
+                <p className="text-sm text-slate-500 mt-1">Explore our range of spiritual offerings and guidance</p>
+              </div>
+
+              {/* Scrollable Container */}
+              <div className="relative">
+                  <div 
+                      ref={servicesMenuRef} 
+                      className="max-h-[50vh] overflow-y-auto hide-scrollbar scroll-smooth pr-16" 
+                      style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
+                  >
+                      {serviceCategories.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-6">
+                          {serviceCategories.map((category) => (
+                            <Link
+                              key={category.id}
+                              to={`/service-category/${category.id}`}
+                              onClick={() => setServicesMenuOpen(false)}
+                              className="group flex flex-col items-center bg-slate-50 rounded-2xl p-4 transition-all hover:bg-spirit-50 hover:shadow-md border border-transparent hover:border-spirit-200"
+                            >
+                              {category.imageUrl ? (
+                                <div className="w-full h-32 rounded-xl overflow-hidden mb-4 bg-slate-200">
+                                   <img src={category.imageUrl} alt={category.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                </div>
+                              ) : (
+                                <div className="w-full h-32 rounded-xl mb-4 bg-spirit-100 flex items-center justify-center text-spirit-300">
+                                  <Package size={40} />
+                                </div>
+                              )}
+                              <h3 className="font-bold text-spirit-900 group-hover:text-accent-600 transition-colors text-center">{category.name}</h3>
+                              <p className="text-xs text-slate-500 mt-2 line-clamp-2 text-center">{category.description}</p>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12 text-slate-500">
+                          <p>No service categories available at the moment.</p>
+                        </div>
+                      )}
+                  </div>
+                  
+                  {/* Internal Scroll Buttons - absolute to this section */}
+                  {serviceCategories.length > 4 && (
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3 py-4 bg-white/90 backdrop-blur-sm px-2 rounded-xl shadow-lg border border-slate-100">
+                          <button 
+                              onClick={() => scrollServicesMenu('up')}
+                              className="p-2 transition-all hover:scale-110 active:scale-95 text-slate-400 hover:text-spirit-900 border border-transparent hover:border-slate-200 rounded-full"
+                              aria-label="Scroll Up"
+                          >
+                              <ArrowUp size={24} />
+                          </button>
+                          <div className="w-full h-[1px] bg-slate-100"></div>
+                          <button 
+                              onClick={() => scrollServicesMenu('down')}
+                              className="p-2 transition-all hover:scale-110 active:scale-95 text-slate-400 hover:text-spirit-900 border border-transparent hover:border-slate-200 rounded-full"
+                              aria-label="Scroll Down"
+                          >
+                              <ArrowDown size={24} />
+                          </button>
+                      </div>
                   )}
               </div>
             </div>

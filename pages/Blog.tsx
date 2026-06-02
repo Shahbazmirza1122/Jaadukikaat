@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Calendar, User, ArrowRight, CircleX } from 'lucide-react';
+import { Calendar, User, ArrowRight, CircleX, Book } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { BlogPost } from '../types';
 import { supabase } from '../lib/supabase';
@@ -284,40 +284,36 @@ const Blog: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {posts.map((post) => (
-                    <div key={post.id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-spirit-100 flex flex-col group animate-fade-in">
-                    <div className="h-48 overflow-hidden relative">
-                        <Link to={`/blog/${post.id}`}>
-                        <img 
-                            src={post.imageUrl} 
-                            alt={post.title} 
-                            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                  <Link
+                    to={`/blog/${post.id}`}
+                    key={post.id}
+                    className="bg-white rounded-3xl border border-spirit-100 shadow-lg overflow-hidden flex flex-col h-[450px] group animate-fade-in"
+                  >
+                      <div className="h-56 relative overflow-hidden">
+                        <img
+                          src={post.imageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e"}
+                          alt={post.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
-                        </Link>
-                        {post.category && (
-                            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-spirit-800 shadow-sm">
-                                {post.category}
-                            </div>
-                        )}
-                    </div>
-                    <div className="p-6 flex flex-col flex-grow">
-                        <div className="flex items-center text-xs text-gray-400 mb-3 space-x-3">
-                        <span className="flex items-center"><Calendar size={12} className="mr-1" /> {post.date}</span>
-                        <span>•</span>
-                        <span>{post.author}</span>
-                        </div>
-                        <Link to={`/blog/${post.id}`}>
-                        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-spirit-600 transition-colors line-clamp-2">
-                            {post.title}
+                        <span className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-800 shadow-sm">
+                          {post.category || "Wisdom"}
+                        </span>
+                      </div>
+                      <div className="p-6 flex flex-col flex-grow">
+                        <h3 className="font-serif font-bold text-xl text-spirit-900 mb-3 line-clamp-2 leading-tight">
+                          {post.title}
                         </h3>
-                        </Link>
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow">
-                        {post.excerpt}
+                        <p className="text-slate-500 text-sm line-clamp-3 mb-3 flex-grow">
+                          {post.excerpt}
                         </p>
-                        <Link to={`/blog/${post.id}`} className="mt-auto text-spirit-600 text-sm font-bold hover:text-spirit-800 self-start group-hover:translate-x-1 transition-transform">
-                        Read More &rarr;
-                        </Link>
-                    </div>
-                    </div>
+                        <div
+                          className="w-full bg-spirit-50 text-spirit-900 font-bold py-3 rounded-xl group-hover:bg-spirit-900 group-hover:text-white transition-colors flex items-center justify-center gap-2 text-sm mt-auto"
+                        >
+                          <Book size={16} /> <span>Read Article</span>{" "}
+                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                  </Link>
                 ))}
                 </div>
             </>

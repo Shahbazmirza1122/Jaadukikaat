@@ -22,8 +22,8 @@ const getEnvVar = (key: string, viteKey: string) => {
 
 // YOUR SPECIFIC SUPABASE CONFIGURATION
 // Defaulting to the provided hardcoded values if env vars are missing or empty
-const HARDCODED_URL = 'https://ihlxttnoaexqaevhdzdm.supabase.co';
-const HARDCODED_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlobHh0dG5vYWV4cWFldmhkemRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5OTQyNzksImV4cCI6MjA4MTU3MDI3OX0.jgoxW6r8Uj7GqR7UiF1tCo7jxbUBP3QjdLRzDmFnuVk';
+const HARDCODED_URL = 'https://jfgtkjezujobzsushhhz.supabase.co';
+const HARDCODED_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RramV6dWpvYnpzdXNoaGh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MTQ2MDIsImV4cCI6MjA5NTk5MDYwMn0.SuILcqDeJtGFoRtcERPqeYefk7gMJQ2Tb_tMBoO-mxA';
 
 const envUrl = getEnvVar('REACT_APP_SUPABASE_URL', 'VITE_SUPABASE_URL');
 const envKey = getEnvVar('REACT_APP_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY');

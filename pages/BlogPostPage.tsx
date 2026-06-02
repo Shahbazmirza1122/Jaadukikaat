@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, User, ArrowLeft, Search, Clock, ChevronRight, Tag, FolderOpen, PanelRightClose, PanelRightOpen, Send, CheckCircle } from 'lucide-react';
+import { Calendar, User, ArrowLeft, ArrowRight, Search, Clock, ChevronRight, Tag, FolderOpen, PanelRightClose, PanelRightOpen, Send, CheckCircle, Book } from 'lucide-react';
 import { BlogPost } from '../types';
 import BlogContentRenderer from '../components/BlogContentRenderer';
 import { supabase } from '../lib/supabase';
@@ -358,14 +358,36 @@ const BlogPostPage: React.FC = () => {
                 <h2 className="text-3xl font-serif font-bold text-spirit-900 mb-8">You Might Also Like</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {relevantPosts.map((post) => (
-                    <div key={post.id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-spirit-100 flex flex-col group">
-                    <div className="h-48 overflow-hidden relative"><Link to={`/blog/${post.id}`}><img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"/></Link></div>
-                    <div className="p-6 flex flex-col flex-grow">
-                        <span className="text-xs text-gray-400 mb-2">{post.date}</span>
-                        <Link to={`/blog/${post.id}`}><h3 className="text-lg font-bold text-gray-900 mb-3 group-hover:text-spirit-600 transition-colors line-clamp-2">{post.title}</h3></Link>
-                        <Link to={`/blog/${post.id}`} className="mt-auto text-spirit-600 text-sm font-bold hover:text-spirit-800 self-start">Read More &rarr;</Link>
-                    </div>
-                    </div>
+                  <Link
+                    to={`/blog/${post.id}`}
+                    key={post.id}
+                    className="bg-white rounded-3xl border border-spirit-100 shadow-lg overflow-hidden flex flex-col h-[450px] group animate-fade-in"
+                  >
+                      <div className="h-56 relative overflow-hidden">
+                        <img
+                          src={post.imageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e"}
+                          alt={post.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                        <span className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-800 shadow-sm">
+                          {post.category || "Wisdom"}
+                        </span>
+                      </div>
+                      <div className="p-6 flex flex-col flex-grow">
+                        <h3 className="font-serif font-bold text-xl text-spirit-900 mb-3 line-clamp-2 leading-tight">
+                          {post.title}
+                        </h3>
+                        <p className="text-slate-500 text-sm line-clamp-3 mb-3 flex-grow">
+                          {post.excerpt}
+                        </p>
+                        <div
+                          className="w-full bg-spirit-50 text-spirit-900 font-bold py-3 rounded-xl group-hover:bg-spirit-900 group-hover:text-white transition-colors flex items-center justify-center gap-2 text-sm mt-auto"
+                        >
+                          <Book size={16} /> <span>Read Article</span>{" "}
+                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                  </Link>
                 ))}
                 </div>
             </div>

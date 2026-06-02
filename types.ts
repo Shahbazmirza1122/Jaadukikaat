@@ -1,4 +1,21 @@
 
+export interface PageSection {
+  id: string;
+  title: string;
+  pageTarget: string; // which page to show on
+  config: {
+    sectionType: 'hero' | 'cta' | 'text' | 'features';
+    bgUrl: string;
+    bgColor: string;
+    overlayStyle: string; // opacity/color
+    textColor: string;
+    fontFamily: string;
+    animation: string;
+    padding: string;
+    content: string; // rich text
+  };
+}
+
 export interface BlogPost {
   id: string;
   title: string;

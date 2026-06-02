@@ -1,0 +1,335 @@
+import React, { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { ShoppingBag, ArrowRight } from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { Product } from "../data/products";
+import { BlogPost } from "../types";
+import { Tag, Lock, Heart, Book } from "lucide-react";
+
+export default function ServiceCategoryPage() {
+  const { id } = useParams<{ id: string }>();
+  const [category, setCategory] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const { addToCart } = useCart();
+
+  const toggleWishlist = (productId: string) => {
+      setWishlist(prev => 
+          prev.includes(productId) 
+              ? prev.filter(id => id !== productId)
+              : [...prev, productId]
+      );
+  };
+
+  const isSaleActive = (product: any) => {
+      if (!product.saleStart && !product.saleEnd) return false;
+      const now = new Date();
+      const start = product.saleStart ? new Date(product.saleStart) : null;
+      const end = product.saleEnd ? new Date(product.saleEnd) : null;
+      
+      if (start && now < start) return false;
+      if (end && now > end) return false;
+      return true;
+  };
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const fetchData = async () => {
+      // Fetch category
+      const { data: catData } = await supabase
+        .from("service_categories")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (catData) setCategory(catData);
+
+      const relatedProductIds = catData?.related_products || [];
+      const relatedArticleIds = catData?.related_articles || [];
+
+      let queryProducts = supabase.from("products").select("*");
+      if (relatedProductIds.length > 0) {
+        queryProducts = queryProducts.in("id", relatedProductIds);
+      } else {
+        queryProducts = queryProducts.limit(4);
+      }
+
+      const { data: prodData } = await queryProducts;
+
+      if (prodData) {
+        setProducts(
+          prodData.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            image: p.image,
+            category: p.category,
+            description: p.description,
+            sku: p.sku,
+            salePrice: p.sale_price,
+            saleStart: p.sale_start,
+            saleEnd: p.sale_end,
+            isOutOfStock: p.is_out_of_stock,
+            isBlurBeforeBuy: p.is_blur_before_buy,
+          })),
+        );
+      }
+
+      let queryPosts = supabase.from("posts").select("*");
+      if (relatedArticleIds.length > 0) {
+        queryPosts = queryPosts.in("id", relatedArticleIds);
+      } else {
+        queryPosts = queryPosts.limit(6);
+      }
+
+      // Fetch blogs
+      const { data: blogData } = await queryPosts;
+
+      if (blogData) {
+        setBlogs(
+          blogData.map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            excerpt: p.excerpt,
+            content: p.content,
+            author: p.author,
+            imageUrl: p.image_url,
+            category: p.category,
+            status: p.status,
+            date: p.date,
+            isLatest: p.is_latest,
+            relatedIds: p.related_ids,
+          })),
+        );
+      }
+
+      setLoading(false);
+    };
+
+    if (id) {
+      fetchData();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-8 h-8 rounded-full border-4 border-accent-500 border-t-transparent animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!category) {
+    return (
+      <div className="min-h-screen py-32 text-center">
+        <h1 className="text-3xl font-bold">Category not found</h1>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Hero Header */}
+      <div className="pt-32 pb-16 px-6 relative overflow-hidden bg-spirit-900 flex items-center justify-center">
+        {category.image_url && (
+          <img
+            src={category.image_url}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="max-w-7xl w-full mx-auto relative z-10 text-center bg-spirit-900/40 backdrop-blur-md p-8 md:p-12 rounded-[2.5rem] border border-white/20 shadow-2xl">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-4 text-white drop-shadow-md">
+            {category.name}
+          </h1>
+          <p className="text-lg md:text-xl text-white/95 max-w-6xl mx-auto leading-relaxed drop-shadow-sm font-medium">
+            {category.description}
+          </p>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 mt-12 space-y-20">
+        {/* Top: Recommended Products */}
+        <section>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl md:text-3xl font-serif font-bold text-spirit-900">
+              Recommended Products
+            </h2>
+            <Link
+              to="/store"
+              className="text-accent-600 hover:text-accent-700 font-bold flex items-center gap-2"
+            >
+              View All Store <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {products.map((product) => {
+              const onSale = isSaleActive(product);
+              const currentPrice = onSale ? product.salePrice : product.price;
+
+              return (
+              <Link
+                to={`/product/${product.id}`}
+                key={product.id}
+                className="bg-spirit-900 rounded-[2rem] shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col relative h-[480px]"
+              >
+                  {/* Price Tag */}
+                  <div className="absolute top-0 right-0 bg-accent-500 text-white font-bold text-sm px-6 py-2 rounded-tr-[2rem] rounded-bl-3xl z-30 shadow-lg">
+                      {currentPrice}
+                  </div>
+
+                  {/* Sale Tag */}
+                  {onSale && !product.isOutOfStock && (
+                      <div className="absolute top-0 left-0 bg-red-500 text-white font-bold text-xs uppercase px-5 py-2 rounded-tl-[2rem] rounded-br-2xl z-30 shadow-lg flex items-center gap-1">
+                          <Tag size={12} /> Sale
+                      </div>
+                  )}
+
+                  {/* Image Area */}
+                  <div className="h-60 w-full relative rounded-t-[2rem] overflow-hidden bg-white/5 border-b border-white/10 flex-shrink-0">
+                      <img 
+                          src={product.image} 
+                          alt={product.name}
+                          className={`w-full h-full object-cover transform group-hover:scale-110 transition duration-700 
+                              ${product.isOutOfStock ? 'grayscale opacity-70' : ''} 
+                              ${product.isBlurBeforeBuy ? 'blur-md scale-110' : ''}
+                          `} 
+                      />
+                      
+                      {/* Blur Overlay Label */}
+                      {product.isBlurBeforeBuy && !product.isOutOfStock && (
+                          <div className="absolute inset-0 flex items-center justify-center z-20">
+                              <div className="bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 text-white font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2">
+                                  <Lock size={12} /> Hidden Content
+                              </div>
+                          </div>
+                      )}
+
+                      {/* Out of Stock Overlay */}
+                      {product.isOutOfStock && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
+                              <span className="bg-red-600 text-white px-4 py-2 rounded-full font-bold uppercase text-xs tracking-wider shadow-lg">Out of Stock</span>
+                          </div>
+                      )}
+                      
+                      {/* Overlay Actions */}
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4 z-10">
+                         <button 
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg ${wishlist.includes(product.id) ? 'bg-red-500 text-white' : 'bg-white text-spirit-900 hover:text-red-500'}`}
+                          >
+                            <Heart size={20} className={wishlist.includes(product.id) ? 'fill-current' : ''} />
+                         </button>
+                      </div>
+                  </div>
+                  
+                  {/* Bottom Container */}
+                  <div className="p-4 flex-grow flex flex-col relative bg-spirit-900 rounded-b-[2rem]">
+                      <div className="border-[3px] border-accent-500 rounded-2xl p-4 flex-grow flex relative mb-2">
+                          {/* Left Column */}
+                          <div className="w-[58%] pr-3 flex flex-col">
+                              <h3 className="font-sans font-bold text-lg leading-tight uppercase tracking-wide text-white mb-2 line-clamp-2">{product.name}</h3>
+                              <p className="text-[10px] text-slate-300 line-clamp-4 leading-relaxed mb-auto">{product.description}</p>
+                              <div className="flex text-yellow-400 text-sm mt-3 tracking-widest">
+                                  ★★★★★
+                              </div>
+                          </div>
+
+                          {/* Divider */}
+                          <div className="w-[1px] bg-white/20 my-1"></div>
+
+                          {/* Right Column */}
+                          <div className="w-[42%] pl-3 flex flex-col justify-start gap-4 mt-1">
+                              <div>
+                                  <div className="font-bold text-[8px] text-white/50 uppercase tracking-wider mb-0.5">Category</div>
+                                  <div className="text-[10px] text-white line-clamp-2 leading-tight">{product.category}</div>
+                              </div>
+                              <div>
+                                  <div className="font-bold text-[8px] text-white/50 uppercase tracking-wider mb-0.5">SKU</div>
+                                  <div className="text-[10px] text-white line-clamp-1 leading-tight">{product.sku}</div>
+                              </div>
+                              <div>
+                                  <div className="font-bold text-[8px] text-white/50 uppercase tracking-wider mb-0.5">Status</div>
+                                  <div className="text-[10px] text-white leading-tight">{product.isOutOfStock ? 'Sold Out' : 'Available'}</div>
+                              </div>
+                          </div>
+
+                          {/* Button */}
+                          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-max z-30">
+                              <button 
+                                  onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      addToCart(product);
+                                  }}
+                                  disabled={!!product.isOutOfStock}
+                                  className={`px-8 py-2 rounded-full font-bold text-xs shadow-xl uppercase tracking-wider transition-colors 
+                                      ${product.isOutOfStock ? 'bg-slate-500 text-slate-300 cursor-not-allowed border-none' : 'bg-white text-accent-600 hover:text-white hover:bg-accent-600 border border-transparent'}
+                                  `}
+                              >
+                                  {product.isOutOfStock ? 'Sold Out' : 'Add to Cart'}
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </Link>
+            )})}
+          </div>
+        </section>
+
+        {/* Bottom: Related Blogs/Articles */}
+        <section>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl md:text-3xl font-serif font-bold text-spirit-900">
+              Articles & Insights
+            </h2>
+            <Link
+              to="/blog"
+              className="text-accent-600 hover:text-accent-700 font-bold flex items-center gap-2"
+            >
+              View All Articles <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {blogs.map((post) => (
+              <Link
+                to={`/blog/${post.id}`}
+                key={post.id}
+                className="bg-white rounded-3xl border border-spirit-100 shadow-lg overflow-hidden flex flex-col h-[450px] group"
+              >
+                  <div className="h-56 relative overflow-hidden">
+                    <img
+                      src={post.imageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e"}
+                      alt={post.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <span className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-spirit-800 shadow-sm">
+                      {post.category || "Wisdom"}
+                    </span>
+                  </div>
+                  <div className="p-6 flex flex-col flex-grow">
+                    <h3 className="font-serif font-bold text-xl text-spirit-900 mb-3 line-clamp-2 leading-tight">
+                      {post.title}
+                    </h3>
+                    <p className="text-slate-500 text-sm line-clamp-3 mb-3 flex-grow">
+                      {post.excerpt}
+                    </p>
+                    <div
+                      className="w-full bg-spirit-50 text-spirit-900 font-bold py-3 rounded-xl group-hover:bg-spirit-900 group-hover:text-white transition-colors flex items-center justify-center gap-2 text-sm mt-auto"
+                    >
+                      <Book size={16} /> <span>Read Article</span>{" "}
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}

@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Blog from './pages/Blog';
 import BlogPostPage from './pages/BlogPostPage';
 import ServicesPage from './pages/ServicesPage';
+import ServiceCategoryPage from './pages/ServiceCategoryPage';
 import Admin from './pages/Admin';
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
@@ -29,6 +30,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/services" element={<ServicesPage />} />
+          <Route path="/service-category/:id" element={<ServiceCategoryPage />} />
           <Route path="/store" element={<StorePage />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:id" element={<BlogPostPage />} />
