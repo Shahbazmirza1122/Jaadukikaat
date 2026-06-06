@@ -30,7 +30,7 @@ const ServicesPage: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white min-h-screen pt-24 pb-20">
+    <div className="bg-white min-h-screen pt-[70px] md:pt-[136px] pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}

@@ -16,7 +16,7 @@ const createRichContent = (paragraphs: string[], image?: string, quote?: string)
     if (quote) {
         rows.splice(1, 0, {
             id: 'quote',
-            columns: [{ id: 'q1', width: 100, content: `<blockquote style='border-left: 4px solid #16a34a; padding-left: 1rem; margin-left: 0; font-style: italic; color: #333;'>${quote}</blockquote>` }]
+            columns: [{ id: 'q1', width: 100, content: `<blockquote style='border-left: 4px solid #6a89a7; padding-left: 1rem; margin-left: 0; font-style: italic; color: #333;'>${quote}</blockquote>` }]
         });
     }
 
@@ -156,6 +156,8 @@ const BlogPostPage: React.FC = () => {
             .from('posts')
             .select('*')
             .eq('status', 'published')
+            .neq("category", "_page_section_")
+            .neq("category", "_form_lead_")
             .order('created_at', { ascending: false });
 
         let allPosts: BlogPost[];
@@ -233,7 +235,7 @@ const BlogPostPage: React.FC = () => {
 
   if (loading) {
     return (
-        <div className="bg-spirit-50 min-h-screen pt-24 pb-20">
+        <div className="bg-spirit-50 min-h-screen pt-40 pb-20">
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-pulse">
                 {/* Header Actions Skeleton */}
                 <div className="flex justify-between mb-6">
@@ -287,7 +289,7 @@ const BlogPostPage: React.FC = () => {
   if (!post) return null;
 
   return (
-    <div className="bg-spirit-50 min-h-screen pt-24 pb-20">
+    <div className="bg-spirit-50 min-h-screen pt-40 pb-20">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="flex flex-wrap items-center justify-between mb-6 gap-4">

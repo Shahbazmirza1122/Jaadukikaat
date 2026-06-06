@@ -254,17 +254,21 @@ const CartPage: React.FC = () => {
       orderId
     });
 
-    // 3. Save to Supabase (For "My Orders" history)
-    if (isAuthenticated && user) {
-        const { error } = await supabase.from('orders').insert([{
-            user_id: user.id,
-            items: cart, // Store full cart array including blurred items
-            total: finalTotal,
-            status: paymentMethod === 'card' || paymentMethod === 'paypal' ? 'Paid' : 'Pending Verification'
-        }]);
-        if (error) {
-            console.error("Failed to save order to history:", error);
-        }
+    // 3. Save to Supabase (For Admin view and User History)
+    const orderItemsWithMeta = [
+      ...cart,
+      { isMeta: true, email, fullName, paymentMethod: paymentLabel }
+    ];
+
+    const { error } = await supabase.from('orders').insert([{
+        user_id: (isAuthenticated && user) ? user.id : null,
+        items: orderItemsWithMeta,
+        total: finalTotal,
+        status: paymentMethod === 'card' || paymentMethod === 'paypal' ? 'Paid' : 'Pending Verification'
+    }]);
+
+    if (error) {
+        console.error("Failed to save order to history:", error);
     }
 
     setTimeout(() => {
@@ -278,7 +282,7 @@ const CartPage: React.FC = () => {
 
   if (orderComplete) {
     return (
-        <div className="min-h-screen pt-24 pb-20 bg-spirit-50 flex items-center justify-center px-4">
+        <div className="min-h-screen pt-40 pb-20 bg-spirit-50 flex items-center justify-center px-4">
             <div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg w-full animate-fade-in-up">
                 <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <CircleCheck className="w-12 h-12 text-green-500" />
@@ -310,7 +314,7 @@ const CartPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-20 bg-spirit-50 relative">
+    <div className="min-h-screen pt-40 pb-20 bg-spirit-50 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-serif font-bold text-spirit-900 mb-8 flex items-center">
             <ShoppingBag className="mr-4" /> {isCheckout ? 'Secure Checkout' : 'Your Cart'}

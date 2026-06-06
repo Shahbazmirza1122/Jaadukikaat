@@ -90,12 +90,12 @@ const StorePage: React.FC = () => {
   });
 
   return (
-    <div className="bg-white min-h-screen pt-24 pb-20">
+    <div className="bg-white min-h-screen pt-[70px] md:pt-[136px] pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
         <div className="text-center mb-16 animate-fade-in pt-8">
-          <span className="text-accent-600 font-bold tracking-[0.4em] uppercase text-xs mb-4 block">Sacred Store</span>
+          <span className="text-accent-600 font-bold tracking-[0.3em] uppercase text-sm mb-4 block">Sacred Store</span>
           <h1 className="text-5xl font-serif font-bold text-spirit-900 mb-6">Spiritual Essentials</h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed font-light">
             Curated tools to enhance your spiritual journey, protection, and peace. Each item is spiritually cleansed before shipping.

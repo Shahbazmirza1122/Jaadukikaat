@@ -7,6 +7,42 @@ import { Product } from "../data/products";
 import { BlogPost } from "../types";
 import { Tag, Lock, Heart, Book } from "lucide-react";
 
+// Custom Typewriter component
+const Typewriter = ({ text, delay = 100 }: { text: string; delay?: number }) => {
+  const [currentText, setCurrentText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    setCurrentText('');
+    setCurrentIndex(0);
+  }, [text]);
+
+  useEffect(() => {
+    if (currentIndex < text.length) {
+      const timeout = setTimeout(() => {
+        setCurrentText(prev => prev + text[currentIndex]);
+        setCurrentIndex(prev => prev + 1);
+      }, delay);
+      return () => clearTimeout(timeout);
+    } else {
+      const timeout = setTimeout(() => {
+        setCurrentText('');
+        setCurrentIndex(0);
+      }, 3000); // 3-second pause before restarting the loop
+      return () => clearTimeout(timeout);
+    }
+  }, [currentIndex, delay, text]);
+
+  return (
+    <span>
+      {currentText}
+      {currentIndex < text.length && (
+        <span className="animate-pulse border-r-[3px] border-white ml-1.5 opacity-70 h-[0.9em] inline-block align-middle"></span>
+      )}
+    </span>
+  );
+};
+
 export default function ServiceCategoryPage() {
   const { id } = useParams<{ id: string }>();
   const [category, setCategory] = useState<any>(null);
@@ -45,6 +81,7 @@ export default function ServiceCategoryPage() {
         .eq("id", id)
         .single();
 
+
       if (catData) setCategory(catData);
 
       const relatedProductIds = catData?.related_products || [];
@@ -78,7 +115,11 @@ export default function ServiceCategoryPage() {
         );
       }
 
-      let queryPosts = supabase.from("posts").select("*");
+      let queryPosts = supabase
+        .from("posts")
+        .select("*")
+        .neq("category", "_page_section_")
+        .neq("category", "_form_lead_");
       if (relatedArticleIds.length > 0) {
         queryPosts = queryPosts.in("id", relatedArticleIds);
       } else {
@@ -131,28 +172,34 @@ export default function ServiceCategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Hero Header */}
-      <div className="pt-32 pb-16 px-6 relative overflow-hidden bg-spirit-900 flex items-center justify-center">
-        {category.image_url && (
-          <img
-            src={category.image_url}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        )}
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="max-w-7xl w-full mx-auto relative z-10 text-center bg-spirit-900/40 backdrop-blur-md p-8 md:p-12 rounded-[2.5rem] border border-white/20 shadow-2xl">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-4 text-white drop-shadow-md">
-            {category.name}
-          </h1>
-          <p className="text-lg md:text-xl text-white/95 max-w-6xl mx-auto leading-relaxed drop-shadow-sm font-medium">
-            {category.description}
-          </p>
+    <div className="min-h-screen bg-gray-50 pt-[70px] md:pt-[136px] pb-20">
+      {/* Hero Header Wrapper */}
+      <div className="relative mb-32 md:mb-40">
+        <div className="h-[45vh] min-h-[350px] relative overflow-hidden bg-spirit-900 border-b border-white/10">
+          {category.image_url && (
+            <img
+              src={category.image_url}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
+          <div className="absolute inset-0 bg-black/40"></div>
+        </div>
+
+        {/* Floating Content Div */}
+        <div className="absolute bottom-0 left-0 right-0 transform translate-y-1/2 z-20 px-4 md:px-8">
+          <div className="max-w-7xl mx-auto text-center bg-spirit-900/95 backdrop-blur-xl p-8 md:p-12 rounded-xl border border-white/10 shadow-2xl">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-4 text-white drop-shadow-md min-h-[1.2em]">
+              <Typewriter text={category.name} delay={100} />
+            </h1>
+            <p className="text-lg md:text-xl text-white/95 max-w-6xl mx-auto leading-relaxed drop-shadow-sm font-medium">
+              {category.description}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 mt-12 space-y-20">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-20">
         {/* Top: Recommended Products */}
         <section>
           <div className="flex items-center justify-between mb-8">

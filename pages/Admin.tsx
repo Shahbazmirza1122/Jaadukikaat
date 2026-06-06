@@ -22,15 +22,22 @@ import {
   Database,
   Tag,
   CalendarClock,
+  Package,
   PackageX,
   EyeOff as EyeOffIcon,
   Settings,
   TicketPercent,
   Check,
+  Users as UsersIcon,
+  Mail as MailIcon,
+  Menu,
 } from "lucide-react";
 import { BlogPost } from "../types";
 import RichTextEditor from "../components/RichTextEditor";
 import PageSectionBuilder from "../components/PageSectionBuilder";
+import { UsersTab } from "../components/UsersTab";
+import { EmailTab } from "../components/EmailTab";
+import { OrdersTab } from "../components/OrdersTab";
 import { supabase } from "../lib/supabase";
 import { Product } from "../data/products";
 
@@ -45,10 +52,11 @@ interface Coupon {
 
 const Admin: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [activeTab, setActiveTab] = useState<
-    "blog" | "duaa" | "products" | "services" | "database" | "sections"
+    "blog" | "duaa" | "products" | "orders" | "services" | "database" | "sections" | "users" | "email"
   >("blog");
   const [serviceCategories, setServiceCategories] = useState<
     {
@@ -421,6 +429,7 @@ const Admin: React.FC = () => {
       .from("posts")
       .select("*")
       .neq("category", "_page_section_")
+      .neq("category", "_form_lead_")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -987,61 +996,102 @@ create policy "Enable all access for all users" on public.posts for all using (t
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row pt-20">
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-spirit-900 text-white min-h-[300px] md:min-h-screen flex-shrink-0">
-        <div className="p-6">
-          <h2 className="text-2xl font-serif font-bold mb-8 flex items-center">
-            <LayoutDashboard className="mr-2" /> Admin CMS
-          </h2>
+      <aside className={`transition-all duration-300 ease-in-out bg-spirit-900 text-white min-h-[300px] md:min-h-screen flex-shrink-0 ${isSidebarOpen ? "w-full md:w-64" : "w-full md:w-20 overflow-hidden"}`}>
+        <div className={`${isSidebarOpen ? "p-6" : "p-4"}`}>
+          <div className={`flex items-center ${isSidebarOpen ? "justify-between" : "justify-center"} mb-8`}>
+            {isSidebarOpen && (
+              <h2 className="text-2xl font-serif font-bold flex items-center whitespace-nowrap">
+                <LayoutDashboard className="mr-2 flex-shrink-0" /> Admin CMS
+              </h2>
+            )}
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-1 hover:bg-spirit-800 rounded-md transition text-spirit-200"
+            >
+              <Menu size={20} />
+            </button>
+          </div>
           <nav className="space-y-2">
             <button
               onClick={() => setActiveTab("blog")}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${activeTab === "blog" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "blog" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              title="Manage Blog"
             >
-              <PenTool size={20} />
-              <span>Manage Blog</span>
+              <PenTool size={20} className="flex-shrink-0" />
+              {isSidebarOpen && <span className="whitespace-nowrap">Manage Blog</span>}
             </button>
             <button
               onClick={() => setActiveTab("products")}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${activeTab === "products" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "products" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              title="Manage Products"
             >
-              <ShoppingBag size={20} />
-              <span>Manage Products</span>
+              <ShoppingBag size={20} className="flex-shrink-0" />
+              {isSidebarOpen && <span className="whitespace-nowrap">Manage Products</span>}
+            </button>
+            <button
+              onClick={() => setActiveTab("orders")}
+              className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "orders" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              title="Manage Orders"
+            >
+              <Package size={20} className="flex-shrink-0" />
+              {isSidebarOpen && <span className="whitespace-nowrap">Manage Orders</span>}
             </button>
             <button
               onClick={() => setActiveTab("services")}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${activeTab === "services" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "services" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              title="Manage Services"
             >
-              <LayoutDashboard size={20} />
-              <span>Manage Services</span>
+              <LayoutDashboard size={20} className="flex-shrink-0" />
+              {isSidebarOpen && <span className="whitespace-nowrap">Manage Services</span>}
             </button>
             <button
               onClick={() => setActiveTab("duaa")}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${activeTab === "duaa" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "duaa" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              title="Manage Duaa"
             >
-              <ScrollText size={20} />
-              <span>Manage Duaa</span>
+              <ScrollText size={20} className="flex-shrink-0" />
+              {isSidebarOpen && <span className="whitespace-nowrap">Manage Duaa</span>}
             </button>
             <button
               onClick={() => setActiveTab("database")}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${activeTab === "database" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "database" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              title="Database Setup"
             >
-              <Database size={20} />
-              <span>Database Setup</span>
+              <Database size={20} className="flex-shrink-0" />
+              {isSidebarOpen && <span className="whitespace-nowrap">Database Setup</span>}
             </button>
             <button
               onClick={() => setActiveTab("sections")}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${activeTab === "sections" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "sections" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              title="Page Sections"
             >
-              <LayoutDashboard size={20} />
-              <span>Page Sections</span>
+              <LayoutDashboard size={20} className="flex-shrink-0" />
+              {isSidebarOpen && <span className="whitespace-nowrap">Page Sections</span>}
+            </button>
+            <button
+              onClick={() => setActiveTab("users")}
+              className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "users" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              title="Users"
+            >
+              <UsersIcon size={20} className="flex-shrink-0" />
+              {isSidebarOpen && <span className="whitespace-nowrap">Users</span>}
+            </button>
+            <button
+              onClick={() => setActiveTab("email")}
+              className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "email" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              title="Email"
+            >
+              <MailIcon size={20} className="flex-shrink-0" />
+              {isSidebarOpen && <span className="whitespace-nowrap">Email</span>}
             </button>
             <div className="pt-8 border-t border-spirit-800 mt-8">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center space-x-3 px-4 py-3 text-red-300 hover:text-red-100 hover:bg-spirit-800 rounded-lg transition"
+                className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 text-red-300 hover:text-red-100 hover:bg-spirit-800 rounded-lg transition`}
+                title="Logout"
               >
-                <LogOut size={20} />
-                <span>Logout</span>
+                <LogOut size={20} className="flex-shrink-0" />
+                {isSidebarOpen && <span className="whitespace-nowrap">Logout</span>}
               </button>
             </div>
           </nav>
@@ -1049,7 +1099,7 @@ create policy "Enable all access for all users" on public.posts for all using (t
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+      <main className="flex-1 p-6 md:p-10 overflow-y-auto w-full transition-all duration-300">
         {notification && (
           <div className="mb-6 bg-green-100 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center animate-fade-in">
             <CircleCheck className="w-5 h-5 mr-2" />
@@ -1085,6 +1135,21 @@ create policy "Enable all access for all users" on public.posts for all using (t
         {/* SECTIONS TAB */}
         {activeTab === "sections" && (
           <PageSectionBuilder />
+        )}
+
+        {/* USERS TAB */}
+        {activeTab === "users" && (
+          <UsersTab />
+        )}
+
+        {/* EMAIL TAB */}
+        {activeTab === "email" && (
+          <EmailTab />
+        )}
+
+        {/* ORDERS TAB */}
+        {activeTab === "orders" && (
+          <OrdersTab />
         )}
 
         {/* BLOG TAB */}

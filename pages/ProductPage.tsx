@@ -91,7 +91,7 @@ const ProductPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-white min-h-screen pt-24 pb-20">
+      <div className="bg-white min-h-screen pt-[70px] md:pt-[136px] pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-pulse">
           {/* Back Button Skeleton */}
           <div className="h-6 w-32 bg-slate-100 rounded mb-8"></div>
@@ -159,7 +159,7 @@ const ProductPage: React.FC = () => {
   const currentPrice = onSale ? product.salePrice : product.price;
 
   return (
-    <div className="bg-white min-h-screen pt-24 pb-20">
+    <div className="bg-white min-h-screen pt-[70px] md:pt-[136px] pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <button 
           onClick={() => navigate(-1)} 

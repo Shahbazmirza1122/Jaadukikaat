@@ -18,6 +18,7 @@ export interface PageSection {
 
 export interface BlogPost {
   id: string;
+  created_at?: string;
   title: string;
   excerpt: string;
   content: string;

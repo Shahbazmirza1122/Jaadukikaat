@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   ArrowUp,
   ArrowDown,
+  MousePointerClick,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
@@ -103,8 +104,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [showLayoutModal, setShowLayoutModal] = useState(false);
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
+  const [showButtonModal, setShowButtonModal] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
+  
+  // State for button insertion
+  const [btnText, setBtnText] = useState("Click Here");
+  const [btnLink, setBtnLink] = useState("https://");
+  const [btnColor, setBtnColor] = useState("#0f4c3a");
   const [mediaTab, setMediaTab] = useState<"upload" | "url">("upload");
 
   // State for media inputs
@@ -302,6 +309,15 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     `;
     execCmd("insertHTML", html);
     setShowProductModal(false);
+  };
+
+  const insertButtonHTML = () => {
+    if (!btnText || !btnLink) return;
+    const fallbackColor = btnColor || "#0f4c3a";
+    // We add a styled anchor tag
+    const html = `<div style="text-align: center; margin: 16px 0;"><a href="${btnLink}" target="_blank" style="display: inline-block; padding: 12px 24px; background-color: ${fallbackColor}; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; font-family: sans-serif;">${btnText}</a></div><p><br/></p>`;
+    execCmd("insertHTML", html);
+    setShowButtonModal(false);
   };
 
   const deleteRow = (rowId: string) => {
@@ -590,6 +606,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowButtonModal(true)}
+            className="p-2 bg-white border border-gray-200 text-gray-700 rounded hover:bg-gray-50 flex items-center gap-2 text-sm font-bold shadow-sm"
+          >
+            <MousePointerClick size={18} /> Add Button
+          </button>
           <button
             type="button"
             onClick={() => setShowProductModal(true)}
@@ -930,6 +953,70 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- POPUP: BUTTON INSERTION --- */}
+      {showButtonModal && (
+        <div className="absolute inset-0 z-50 flex items-start justify-center pt-20 bg-black/20 backdrop-blur-[1px]">
+          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 w-[400px] animate-fade-in flex flex-col">
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <h3 className="font-bold text-gray-800 flex items-center">
+                <MousePointerClick size={18} className="mr-2 text-spirit-600" />
+                Add Button
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowButtonModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Button Text</label>
+                <input 
+                  type="text" 
+                  value={btnText} 
+                  onChange={(e) => setBtnText(e.target.value)} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-spirit-500 outline-none text-sm"
+                  placeholder="e.g. Click Here"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Link URL</label>
+                <input 
+                  type="text" 
+                  value={btnLink} 
+                  onChange={(e) => setBtnLink(e.target.value)} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-spirit-500 outline-none text-sm"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Button Color</label>
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="color" 
+                    value={btnColor} 
+                    onChange={(e) => setBtnColor(e.target.value)} 
+                    className="w-10 h-10 border-0 p-0 rounded cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-600 font-mono">{btnColor}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={insertButtonHTML}
+                disabled={!btnText || !btnLink}
+                className="w-full mt-4 bg-spirit-600 text-white font-bold py-2.5 rounded-lg hover:bg-spirit-700 transition disabled:opacity-50"
+              >
+                Insert Button
+              </button>
             </div>
           </div>
         </div>

@@ -135,6 +135,8 @@ const Home: React.FC = () => {
           .from("posts")
           .select("*")
           .eq("status", "published")
+          .neq("category", "_page_section_")
+          .neq("category", "_form_lead_")
           .order("created_at", { ascending: false });
 
         if (error || !data || data.length === 0) {
