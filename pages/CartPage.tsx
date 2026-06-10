@@ -21,7 +21,7 @@ const CartPage: React.FC = () => {
   const [zip, setZip] = useState('');
   
   // Payment State
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'jazzcash'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'jazzcash' | 'safepay'>('card');
   const [cardName, setCardName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
@@ -229,6 +229,7 @@ const CartPage: React.FC = () => {
     let paymentLabel = '';
     if (paymentMethod === 'card') paymentLabel = `Credit Card (${cardBrand.toUpperCase()} ending ${cardNumber.slice(-4)})`;
     else if (paymentMethod === 'jazzcash') paymentLabel = 'JazzCash (Manual)';
+    else if (paymentMethod === 'safepay') paymentLabel = 'Safepay';
     else paymentLabel = 'PayPal';
 
     // 1. Submit to Sheet
@@ -242,33 +243,77 @@ const CartPage: React.FC = () => {
                    Total: $${finalTotal.toFixed(2)}${discountNote}`
     };
 
-    await submitToGoogleSheet('Services', orderData);
+    try {
+      await submitToGoogleSheet('Services', orderData);
 
-    // 2. Send Email via Google Script (Acts as SMTP)
-    await sendOrderEmail({
-      fullName,
-      email,
-      details: orderDetails,
-      total: `$${finalTotal.toFixed(2)}`,
-      paymentMethod: paymentLabel,
-      orderId
-    });
+      // 2. Send Email via Google Script (Acts as SMTP)
+      await sendOrderEmail({
+        fullName,
+        email,
+        details: orderDetails,
+        total: `$${finalTotal.toFixed(2)}`,
+        paymentMethod: paymentLabel,
+        orderId
+      });
 
-    // 3. Save to Supabase (For Admin view and User History)
-    const orderItemsWithMeta = [
-      ...cart,
-      { isMeta: true, email, fullName, paymentMethod: paymentLabel }
-    ];
+      // 3. Save to Supabase (For Admin view and User History)
+      const orderItemsWithMeta = [
+        ...cart,
+        { isMeta: true, email, fullName, paymentMethod: paymentLabel }
+      ];
 
-    const { error } = await supabase.from('orders').insert([{
-        user_id: (isAuthenticated && user) ? user.id : null,
-        items: orderItemsWithMeta,
-        total: finalTotal,
-        status: paymentMethod === 'card' || paymentMethod === 'paypal' ? 'Paid' : 'Pending Verification'
-    }]);
+      const { error } = await supabase.from('orders').insert([{
+          user_id: (isAuthenticated && user) ? user.id : null,
+          items: orderItemsWithMeta,
+          total: finalTotal,
+          status: paymentMethod === 'card' || paymentMethod === 'paypal' ? 'Paid' : 'Pending Verification'
+      }]);
 
-    if (error) {
-        console.error("Failed to save order to history:", error);
+      if (error) {
+          console.error("Failed to save order to history:", error);
+      }
+    } catch (e) {
+      console.error("Non-critical error during checkout tracking", e);
+    }
+
+    if (paymentMethod === 'safepay') {
+      try {
+        const response = await fetch('/api/safepay/create-tracker', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: finalTotal,
+            currency: 'PKR',
+            environment: import.meta.env.VITE_SAFEPAY_ENVIRONMENT || 'sandbox'
+          })
+        });
+        
+        const data = await response.json();
+        
+          // handle different response shapes sometimes it's data.data.token or data.token
+        if (response.ok && (data.token || (data.data && data.data.token))) {
+          const token = data.token || (data.data ? data.data.token : null);
+          let env = String(import.meta.env.VITE_SAFEPAY_ENVIRONMENT || 'sandbox').toLowerCase();
+          if (env !== 'production') env = 'sandbox';
+          const baseUrl = env === 'production' ? 'https://api.getsafepay.com' : 'https://sandbox.api.getsafepay.com';
+          
+          clearCart();
+          setAppliedCoupon(null);
+          setDiscountAmount(0);
+          
+          window.location.href = `${baseUrl}/checkout/pay?env=${env}&beacon=${token}&source=custom&order_id=${orderId}&redirect_url=${encodeURIComponent(window.location.origin + '/orders')}&cancel_url=${encodeURIComponent(window.location.origin + '/cart')}`;
+          return;
+        } else {
+          const errMsg = data.error || data.message || 'Unknown error from Safepay API';
+          alert('Failed to initialize Safepay checkout: ' + JSON.stringify(errMsg));
+          setIsProcessing(false);
+          return;
+        }
+      } catch (err: any) {
+        alert('Error connecting to Safepay: ' + err.message);
+        setIsProcessing(false);
+        return;
+      }
     }
 
     setTimeout(() => {
@@ -434,7 +479,24 @@ const CartPage: React.FC = () => {
                                   <Smartphone size={24} />
                                   <span className="text-sm font-bold">JazzCash</span>
                               </button>
+                               <button 
+                                type="button"
+                                onClick={() => setPaymentMethod('safepay')}
+                                className={`flex-1 py-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === 'safepay' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'}`}
+                              >
+                                  <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+                                  <span className="text-sm font-bold">Safepay</span>
+                              </button>
                           </div>
+
+                          {paymentMethod === 'safepay' && (
+                            <div className="space-y-4 animate-fade-in">
+                                <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl text-sm text-indigo-700 flex items-start gap-3">
+                                    <div className="mt-0.5">ℹ️</div>
+                                    <p>You will be redirected to Safepay's secure checkout page to complete your payment.</p>
+                                </div>
+                            </div>
+                          )}
 
                           {paymentMethod === 'card' && (
                             <div className="space-y-4 animate-fade-in">
