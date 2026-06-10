@@ -37,6 +37,7 @@ const CartPage: React.FC = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
+  const [safepayCheckoutUrl, setSafepayCheckoutUrl] = useState<string | null>(null);
 
   // Info Popup State
   const [showInfoPopup, setShowInfoPopup] = useState(false);
@@ -297,11 +298,10 @@ const CartPage: React.FC = () => {
           if (env !== 'production') env = 'sandbox';
           const baseUrl = env === 'production' ? 'https://api.getsafepay.com' : 'https://sandbox.api.getsafepay.com';
           
-          clearCart();
-          setAppliedCoupon(null);
-          setDiscountAmount(0);
+          const checkoutUrl = `${baseUrl}/checkout/pay?env=${env}&beacon=${token}&source=custom&order_id=${orderId}&redirect_url=${encodeURIComponent(window.location.origin + '/orders')}&cancel_url=${encodeURIComponent(window.location.origin + '/cart')}`;
           
-          window.location.href = `${baseUrl}/checkout/pay?env=${env}&beacon=${token}&source=custom&order_id=${orderId}&redirect_url=${encodeURIComponent(window.location.origin + '/orders')}&cancel_url=${encodeURIComponent(window.location.origin + '/cart')}`;
+          setSafepayCheckoutUrl(checkoutUrl);
+          setIsProcessing(false);
           return;
         } else {
           const errMsg = data.error || data.message || 'Unknown error from Safepay API';
@@ -324,6 +324,30 @@ const CartPage: React.FC = () => {
         setDiscountAmount(0);
     }, 2000); 
   };
+
+  if (safepayCheckoutUrl) {
+    return (
+        <div className="min-h-screen pt-40 pb-20 bg-spirit-50 flex items-center justify-center px-4">
+            <div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-lg w-full animate-fade-in-up">
+                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Lock className="w-12 h-12 text-blue-500" />
+                </div>
+                <h2 className="text-3xl font-serif font-bold text-spirit-900 mb-4">Complete Payment</h2>
+                <p className="text-slate-600 mb-8 leading-relaxed">
+                    Your secure checkout session goes through Safepay. Please click the button below to complete your payment in a new tab.
+                </p>
+                <div className="flex flex-col gap-3">
+                    <a href={safepayCheckoutUrl} target="_blank" rel="noopener noreferrer" onClick={() => { setSafepayCheckoutUrl(null); setOrderComplete(true); clearCart(); setAppliedCoupon(null); setDiscountAmount(0); }} className="inline-flex items-center justify-center bg-[#1A73E8] text-white font-bold py-4 px-10 rounded-xl hover:bg-blue-700 transition shadow-lg w-full">
+                        Open Safepay Checkout
+                    </a>
+                    <button onClick={() => setSafepayCheckoutUrl(null)} className="inline-flex items-center justify-center bg-white text-slate-500 font-bold py-4 px-10 rounded-xl border-2 border-slate-100 hover:bg-slate-50 transition w-full">
+                        Cancel & Return
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+  }
 
   if (orderComplete) {
     return (
