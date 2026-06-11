@@ -105,6 +105,7 @@ const Home: React.FC = () => {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [productsList, setProductsList] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [bannerSlides, setBannerSlides] = useState<any[]>([]);
   const { sections: pageSections } = usePageSections("/");
   const location = useLocation();
   const navigate = useNavigate();
@@ -137,6 +138,7 @@ const Home: React.FC = () => {
           .eq("status", "published")
           .neq("category", "_page_section_")
           .neq("category", "_form_lead_")
+          .neq("category", "_banner_")
           .order("created_at", { ascending: false });
 
         if (error || !data || data.length === 0) {
@@ -196,8 +198,49 @@ const Home: React.FC = () => {
       }
     };
 
+    const fetchBanners = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("posts")
+          .select("*")
+          .eq("category", "_banner_")
+          .order("created_at", { ascending: true });
+
+        if (!error && data && data.length > 0) {
+           const mappedBanners = data.map((p: any) => {
+              let config = {
+                 imageTransition: 'zoom',
+                 overlayHeight: '100%',
+                 overlayWidth: '100%',
+                 overlayPosition: 'bottom',
+                 overlayColor: '#000000',
+                 overlayOpacity: '0.4',
+                 headingAnimation: 'fade-in-up',
+                 textAnimation: 'fade-in-up'
+              };
+              try {
+                if(p.content) config = JSON.parse(p.content);
+              } catch(e) {}
+              return {
+                 id: p.id,
+                 title: p.title,
+                 subtitle: p.excerpt || "",
+                 image: p.image_url || p.imageUrl,
+                 cta: p.author || "Explore",
+                 linkTarget: p.date || "#services",
+                 config
+              }
+           });
+           setBannerSlides(mappedBanners);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch banners");
+      }
+    };
+
     fetchBlogs();
     fetchProducts();
+    fetchBanners();
   }, []);
 
   // Donation State
@@ -344,12 +387,13 @@ const Home: React.FC = () => {
   ];
 
   useEffect(() => {
+    const slideCount = bannerSlides.length > 0 ? bannerSlides.length : slides.length;
     const timer = setInterval(
-      () => setCurrentSlide((prev) => (prev + 1) % slides.length),
+      () => setCurrentSlide((prev) => (prev + 1) % slideCount),
       6000,
     );
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides.length, bannerSlides.length]);
 
   const scrollProducts = (direction: "left" | "right") => {
     if (productScrollRef.current) {
@@ -676,6 +720,8 @@ const Home: React.FC = () => {
     }
   };
 
+  const activeSlides = bannerSlides.length > 0 ? bannerSlides : slides;
+
   return (
     <div className="w-full overflow-x-hidden relative bg-white">
       {/* Hero Section */}
@@ -683,39 +729,126 @@ const Home: React.FC = () => {
         id="top"
         className="relative h-[70vh] md:h-screen overflow-hidden bg-spirit-900"
       >
-        {slides.map((slide, index) => (
+        {activeSlides.map((slide, index) => {
+          const config = slide.config || {
+             imageTransition: 'zoom',
+             overlayHeight: '100%',
+             overlayWidth: '100%',
+             overlayPosition: 'bottom',
+             overlayColor: '#0f172a',
+             overlayOpacity: '0.6',
+             headingAnimation: 'fade-in-up',
+             textAnimation: 'fade-in-up'
+          };
+          
+          let imgAnimClass = "scale-100";
+          if(index === currentSlide) {
+             if(config.imageTransition === 'zoom') imgAnimClass = "scale-110";
+             else if(config.imageTransition === 'fade') imgAnimClass = "scale-100 opacity-100";
+             else if(config.imageTransition === 'slide-left') imgAnimClass = "translate-x-[-5%] scale-105";
+             else if(config.imageTransition === 'slide-right') imgAnimClass = "translate-x-[5%] scale-105";
+             else if(config.imageTransition === 'pan-up') imgAnimClass = "translate-y-[-5%] scale-105";
+             else if(config.imageTransition === 'pan-down') imgAnimClass = "translate-y-[5%] scale-105";
+             else imgAnimClass = "scale-100";
+          }
+          
+          let headingAnimClass = "opacity-0";
+          if(index === currentSlide) {
+             if(config.headingAnimation === 'none') {
+                headingAnimClass = "opacity-100";
+             } else if(config.headingAnimation === 'typewriter') {
+                headingAnimClass = "animate-typing overflow-hidden whitespace-nowrap border-r-4 border-accent-500 pr-2";
+             } else {
+                headingAnimClass = `animate-${config.headingAnimation}`;
+             }
+          }
+
+          let textAnimClass = "opacity-0";
+          if(index === currentSlide) {
+             if(config.textAnimation === 'none') {
+                 textAnimClass = "opacity-100";
+             } else {
+                 textAnimClass = `animate-${config.textAnimation}`;
+             }
+          }
+
+          // Overlay style
+          let hex = config.overlayColor || '#000000';
+          let r = 0; let g = 0; let b = 0;
+          if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+              let c= hex.substring(1).split('');
+              if(c.length== 3){
+                  c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+              }
+              c= '0x'+c.join('');
+              r= (Number(c)>>16)&255;
+              g= (Number(c)>>8)&255;
+              b= Number(c)&255;
+          }
+          const rgbaOverlay = `rgba(${r}, ${g}, ${b}, ${config.overlayOpacity})`;
+          
+          let gradientStyle = "";
+          let overlayPositionClasses = "";
+          
+          const position = config.overlayPosition || 'bottom';
+          if(position === 'bottom') {
+             overlayPositionClasses = "bottom-0 left-0 h-full w-full"; // height will be set inline
+             gradientStyle = `linear-gradient(to top, ${rgbaOverlay} 0%, rgba(${r}, ${g}, ${b}, 0) 100%)`;
+          } else if(position === 'top') {
+             overlayPositionClasses = "top-0 left-0 h-full w-full";
+             gradientStyle = `linear-gradient(to bottom, ${rgbaOverlay} 0%, rgba(${r}, ${g}, ${b}, 0) 100%)`;
+          } else if(position === 'left') {
+             overlayPositionClasses = "top-0 left-0 h-full w-full";
+             gradientStyle = `linear-gradient(to right, ${rgbaOverlay} 0%, rgba(${r}, ${g}, ${b}, 0) 100%)`;
+          } else if(position === 'right') {
+             overlayPositionClasses = "top-0 right-0 h-full w-full";
+             gradientStyle = `linear-gradient(to left, ${rgbaOverlay} 0%, rgba(${r}, ${g}, ${b}, 0) 100%)`;
+          } else {
+             // center
+             overlayPositionClasses = "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-full w-full";
+             gradientStyle = `radial-gradient(ellipse at center, ${rgbaOverlay} 0%, rgba(${r}, ${g}, ${b}, 0) 100%)`;
+          }
+
+          return (
           <div
             key={index}
             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"}`}
           >
             <div
-              className={`absolute inset-0 bg-cover bg-center transition-transform duration-[12000ms] ${index === currentSlide ? "scale-110" : "scale-100"}`}
+              className={`absolute inset-0 bg-cover bg-center transition-all duration-[12000ms] ${imgAnimClass}`}
               style={{ backgroundImage: `url(${slide.image})` }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-spirit-900/95 via-spirit-900/40 to-transparent"></div>
+              <div 
+                 className={`absolute ${overlayPositionClasses}`}
+                 style={{
+                    height: (position === 'top' || position === 'bottom') ? config.overlayHeight : '100%',
+                    width: (position === 'left' || position === 'right') ? (config.overlayWidth || config.overlayHeight) : '100%',
+                    background: gradientStyle
+                 }}
+              ></div>
             </div>
-            <div className="relative h-full flex flex-col justify-center pt-40 md:pt-48 max-w-7xl mx-auto px-6">
+            <div className="relative h-full flex flex-col justify-center pt-40 md:pt-48 max-w-7xl mx-auto px-6 z-20 pointer-events-none">
               <div
-                className={`max-w-3xl ${index === currentSlide ? "animate-fade-in-up" : "opacity-0"}`}
+                className={`max-w-3xl ${index === currentSlide ? "opacity-100" : "opacity-0"}`}
               >
                 <h1
-                  className={`text-[2rem] sm:text-5xl md:text-8xl font-serif font-bold text-white mb-4 md:mb-6 drop-shadow-2xl leading-tight w-max ${index === currentSlide ? "animate-typing overflow-hidden whitespace-nowrap border-r-4 border-accent-500 pr-2" : ""}`}
+                  className={`text-[2rem] sm:text-5xl md:text-8xl font-serif font-bold text-white mb-4 md:mb-6 drop-shadow-2xl leading-tight w-max ${headingAnimClass}`}
                 >
                   {slide.title}
                 </h1>
-                <p className="text-base sm:text-xl md:text-2xl text-slate-200 mb-6 md:mb-10 font-light leading-relaxed drop-shadow-lg">
+                <p className={`text-base sm:text-xl md:text-2xl text-slate-200 mb-6 md:mb-10 font-light leading-relaxed drop-shadow-lg max-w-2xl ${textAnimClass}`}>
                   {slide.subtitle}
                 </p>
-                <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+                <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 pointer-events-auto">
                   <a
-                    href="#services"
-                    className="inline-flex items-center justify-center bg-accent-500 text-white font-bold py-3 px-6 md:py-4 md:px-10 rounded-full shadow-2xl hover:bg-accent-600 transition transform hover:scale-105 active:scale-95 text-sm md:text-base"
+                    href={slide.linkTarget || "#services"}
+                    className="inline-flex items-center justify-center bg-accent-500 text-white font-bold py-3 px-6 md:py-4 md:px-10 rounded-full shadow-2xl hover:bg-accent-600 transition transform hover:scale-105 active:scale-95 text-sm md:text-base pointer-events-auto"
                   >
                     {slide.cta} <ArrowRight className="ml-2 w-4 h-4 md:w-5 md:h-5" />
                   </a>
                   <a
                     href="#about"
-                    className="inline-flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold py-3 px-6 md:py-4 md:px-10 rounded-full hover:bg-white/20 transition text-sm md:text-base"
+                    className="inline-flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold py-3 px-6 md:py-4 md:px-10 rounded-full hover:bg-white/20 transition text-sm md:text-base pointer-events-auto"
                   >
                     Our Story
                   </a>
@@ -723,7 +856,8 @@ const Home: React.FC = () => {
               </div>
             </div>
           </div>
-        ))}
+        )
+      })}
       </section>
 
       {/* Product Carousel Section */}

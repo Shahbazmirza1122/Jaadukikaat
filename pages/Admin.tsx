@@ -38,6 +38,7 @@ import PageSectionBuilder from "../components/PageSectionBuilder";
 import { UsersTab } from "../components/UsersTab";
 import { EmailTab } from "../components/EmailTab";
 import { OrdersTab } from "../components/OrdersTab";
+import { BannersTab } from "../components/BannersTab";
 import { supabase } from "../lib/supabase";
 import { Product } from "../data/products";
 
@@ -56,7 +57,7 @@ const Admin: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [activeTab, setActiveTab] = useState<
-    "blog" | "duaa" | "products" | "orders" | "services" | "database" | "sections" | "users" | "email"
+    "blog" | "duaa" | "products" | "orders" | "services" | "database" | "sections" | "banners" | "users" | "email"
   >("blog");
   const [serviceCategories, setServiceCategories] = useState<
     {
@@ -430,6 +431,7 @@ const Admin: React.FC = () => {
       .select("*")
       .neq("category", "_page_section_")
       .neq("category", "_form_lead_")
+      .neq("category", "_banner_")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -1069,6 +1071,14 @@ create policy "Enable all access for all users" on public.posts for all using (t
               {isSidebarOpen && <span className="whitespace-nowrap">Page Sections</span>}
             </button>
             <button
+              onClick={() => setActiveTab("banners")}
+              className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "banners" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
+              title="Home Banners"
+            >
+              <ImageIcon size={20} className="flex-shrink-0" />
+              {isSidebarOpen && <span className="whitespace-nowrap">Home Banners</span>}
+            </button>
+            <button
               onClick={() => setActiveTab("users")}
               className={`w-full flex items-center ${isSidebarOpen ? "space-x-3 px-4" : "justify-center"} py-3 rounded-lg transition ${activeTab === "users" ? "bg-spirit-700 text-white" : "text-spirit-200 hover:bg-spirit-800"}`}
               title="Users"
@@ -1135,6 +1145,11 @@ create policy "Enable all access for all users" on public.posts for all using (t
         {/* SECTIONS TAB */}
         {activeTab === "sections" && (
           <PageSectionBuilder />
+        )}
+
+        {/* BANNERS TAB */}
+        {activeTab === "banners" && (
+          <BannersTab />
         )}
 
         {/* USERS TAB */}
