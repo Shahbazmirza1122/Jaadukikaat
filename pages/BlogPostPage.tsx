@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Calendar, User, ArrowLeft, ArrowRight, Search, Clock, ChevronRight, Tag, FolderOpen, PanelRightClose, PanelRightOpen, Send, CheckCircle, Book } from 'lucide-react';
+import { Calendar, User, ArrowLeft, ArrowRight, Search, Clock, ChevronRight, Tag, FolderOpen, PanelRightClose, PanelRightOpen, Send, CheckCircle, Book, Globe, Share2, Facebook, Instagram, MessageCircle, Link as LinkIcon } from 'lucide-react';
 import { BlogPost } from '../types';
 import BlogContentRenderer from '../components/BlogContentRenderer';
 import { supabase } from '../lib/supabase';
@@ -137,6 +137,29 @@ const BlogPostPage: React.FC = () => {
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [currentLang, setCurrentLang] = useState<'en' | 'ur'>('en');
+
+  const handleLanguageToggle = () => {
+    const newLang = currentLang === 'en' ? 'ur' : 'en';
+    
+    // Google Translate uses .goog-te-combo to change language programmatically
+    const gtSelect = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+    if (gtSelect) {
+      gtSelect.value = newLang;
+      gtSelect.dispatchEvent(new Event('change'));
+      setCurrentLang(newLang);
+    } else {
+      // Fallback if script hasn't loaded yet
+      setTimeout(() => {
+        const retrySelect = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+        if (retrySelect) {
+            retrySelect.value = newLang;
+            retrySelect.dispatchEvent(new Event('change'));
+            setCurrentLang(newLang);
+        }
+      }, 500);
+    }
+  };
 
   // Comment Form State
   const [commentName, setCommentName] = useState('');
@@ -144,6 +167,47 @@ const BlogPostPage: React.FC = () => {
   const [commentMessage, setCommentMessage] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentSubmitted, setCommentSubmitted] = useState(false);
+  
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
+
+  const handleShare = async (platform: string) => {
+    const url = window.location.href;
+    const title = post?.title || 'Check out this post from Jaadu ki kaat Journal';
+    
+    setShareMenuOpen(false);
+
+    if (platform === 'copy') {
+        try {
+            await navigator.clipboard.writeText(url);
+            setShowCopiedToast(true);
+            setTimeout(() => setShowCopiedToast(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+        }
+    } else if (platform === 'whatsapp') {
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(title + '\n' + url)}`, '_blank');
+    } else if (platform === 'facebook') {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+    } else if (platform === 'instagram') {
+        // Instagram doesn't have a direct share URL, copy to clipboard instead
+        try {
+            await navigator.clipboard.writeText(url);
+            alert('Link copied! Open Instagram to share.');
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+        }
+    } else if (platform === 'native' && navigator.share) {
+        try {
+            await navigator.share({
+                title,
+                url
+            });
+        } catch (err) {
+            console.error('Error sharing: ', err);
+        }
+    }
+  };
 
 
   useEffect(() => {
@@ -152,25 +216,30 @@ const BlogPostPage: React.FC = () => {
     const fetchData = async () => {
         setLoading(true);
 
-        const { data, error } = await supabase
-            .from('posts')
-            .select('*')
-            .eq('status', 'published')
-            .neq("category", "_page_section_")
-            .neq("category", "_form_lead_")
-            .order('created_at', { ascending: false });
-
         let allPosts: BlogPost[];
-        if (error || !data || data.length === 0) {
-             console.warn("Supabase fetch failed or returned no posts. Falling back to dummy data.");
-             allPosts = [dummyLatestPost, ...dummyOtherPosts];
-        } else {
-             allPosts = data.map((p: any) => ({
-                ...p,
-                imageUrl: p.image_url || p.imageUrl,
-                relatedIds: p.related_ids || p.relatedIds,
-                isLatest: p.is_latest || p.isLatest
-            }));
+        try {
+            const { data, error } = await supabase
+                .from('posts')
+                .select('*')
+                .eq('status', 'published')
+                .neq("category", "_page_section_")
+                .neq("category", "_form_lead_")
+                .order('created_at', { ascending: false });
+
+            if (error || !data || data.length === 0) {
+                 console.warn("Supabase fetch failed or returned no posts. Falling back to dummy data.");
+                 allPosts = [dummyLatestPost, ...dummyOtherPosts];
+            } else {
+                 allPosts = data.map((p: any) => ({
+                    ...p,
+                    imageUrl: p.image_url || p.imageUrl,
+                    relatedIds: p.related_ids || p.relatedIds,
+                    isLatest: p.is_latest || p.isLatest
+                }));
+            }
+        } catch (e) {
+            console.warn("Supabase fetch threw an error. Falling back to dummy data.", e);
+            allPosts = [dummyLatestPost, ...dummyOtherPosts];
         }
         
         const cats = new Set(allPosts.map(p => p.category).filter(Boolean));
@@ -290,32 +359,89 @@ const BlogPostPage: React.FC = () => {
 
   return (
     <div className="bg-spirit-50 min-h-screen pt-40 pb-20">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className={`w-full mx-auto transition-all duration-300 ${isSidebarOpen ? 'max-w-[95%] px-4 sm:px-6 lg:px-8' : 'max-w-[96%] px-4 sm:px-6 lg:px-8'}`}>
         
-        <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+        <div className="sticky top-[41px] md:top-[105px] z-40 py-4 bg-spirit-50/95 backdrop-blur-md rounded-b-xl px-4 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] flex flex-wrap items-center justify-between mb-6 gap-4">
           <Link to="/blog" className="inline-flex items-center text-spirit-600 hover:text-spirit-800 font-medium transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to Journal
           </Link>
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="flex items-center space-x-2 bg-white text-spirit-600 hover:text-spirit-800 hover:bg-spirit-50 px-4 py-2 rounded-lg border border-spirit-200 shadow-sm transition-all font-bold text-sm"
-            title={isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
-          >
-            {isSidebarOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
-            <span className="hidden sm:inline">{isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}</span>
-          </button>
+          <div className="flex items-center gap-4 relative">
+              <button 
+                  onClick={handleLanguageToggle}
+                  className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-spirit-200 hover:bg-spirit-50 transition-colors text-sm font-semibold text-spirit-800"
+              >
+                  <Globe className="w-4 h-4 text-spirit-600" />
+                  <span className="hidden sm:inline">{currentLang === 'en' ? 'Translate to Urdu' : 'Switch to English'}</span>
+                  <span className="sm:hidden">{currentLang === 'en' ? 'Urdu' : 'English'}</span>
+              </button>
+              
+              <div className="relative">
+                  <button 
+                      onClick={() => {
+                          if (navigator.share) {
+                              handleShare('native');
+                          } else {
+                              setShareMenuOpen(!shareMenuOpen);
+                          }
+                      }}
+                      className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-spirit-200 hover:bg-spirit-50 transition-colors text-sm font-semibold text-spirit-800"
+                  >
+                      <Share2 className="w-4 h-4 text-spirit-600" />
+                      <span className="hidden sm:inline">Share</span>
+                  </button>
+
+                  {/* Share Dropdown */}
+                  {shareMenuOpen && !navigator.share && (
+                      <>
+                          <div className="fixed inset-0 z-40" onClick={() => setShareMenuOpen(false)}></div>
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-spirit-100 z-50 overflow-hidden animate-fade-in">
+                              <button onClick={() => handleShare('copy')} className="w-full flex items-center px-4 py-3 hover:bg-spirit-50 text-sm text-gray-700 transition">
+                                  <LinkIcon className="w-4 h-4 mr-3 text-gray-400" /> Copy Link
+                              </button>
+                              <button onClick={() => handleShare('whatsapp')} className="w-full flex items-center px-4 py-3 hover:bg-spirit-50 text-sm text-gray-700 transition">
+                                  <MessageCircle className="w-4 h-4 mr-3 text-green-500" /> WhatsApp
+                              </button>
+                              <button onClick={() => handleShare('facebook')} className="w-full flex items-center px-4 py-3 hover:bg-spirit-50 text-sm text-gray-700 transition">
+                                  <Facebook className="w-4 h-4 mr-3 text-blue-600" /> Facebook
+                              </button>
+                              <button onClick={() => handleShare('instagram')} className="w-full flex items-center px-4 py-3 hover:bg-spirit-50 text-sm text-gray-700 transition">
+                                  <Instagram className="w-4 h-4 mr-3 text-pink-600" /> Instagram
+                              </button>
+                          </div>
+                      </>
+                  )}
+              </div>
+
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="flex items-center space-x-2 bg-white text-spirit-600 hover:text-spirit-800 hover:bg-spirit-50 px-4 py-2 rounded-lg border border-spirit-200 shadow-sm transition-all font-bold text-sm"
+                title={isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
+              >
+                {isSidebarOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+                <span className="hidden sm:inline">{isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}</span>
+              </button>
+          </div>
         </div>
+
+        {showCopiedToast && (
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-fade-in flex items-center">
+                <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
+                Link copied to clipboard!
+            </div>
+        )}
 
         <div className="flex flex-col lg:flex-row gap-8 items-start relative">
           
           <div className={`${isSidebarOpen ? 'lg:w-3/4' : 'w-full'} transition-all duration-300 space-y-12`}>
-            <article className="bg-white rounded-2xl shadow-sm border border-spirit-100 overflow-hidden animate-fade-in">
-              <div className="h-64 md:h-[500px] w-full overflow-hidden relative">
+            <article className="bg-white shadow-sm overflow-hidden animate-fade-in transition-all duration-300 rounded-2xl border border-spirit-100">
+              <div className="h-64 md:h-[600px] w-full overflow-hidden relative">
                 <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover"/>
                 {post.category && (
-                    <Link to={`/blog?category=${post.category}`} className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-bold text-spirit-800 shadow-sm hover:bg-white transition">
-                        {post.category}
-                    </Link>
+                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
+                      <Link to={`/blog?category=${post.category}`} className="bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-bold text-spirit-800 shadow-sm hover:bg-white transition inline-block">
+                          {post.category}
+                      </Link>
+                    </div>
                 )}
               </div>
               <div className="p-8 md:p-12">
@@ -333,7 +459,7 @@ const BlogPostPage: React.FC = () => {
             </article>
 
             {/* Comment Section */}
-            <div className="bg-white p-8 md:p-10 rounded-2xl shadow-sm border border-spirit-100">
+            <div className="bg-white p-8 md:p-10 shadow-sm transition-all duration-300 rounded-2xl border border-spirit-100">
                 <h2 className="text-2xl font-serif font-bold text-spirit-900 mb-6">Leave a Comment</h2>
                 {commentSubmitted ? (
                     <div className="bg-green-50 text-green-800 p-6 rounded-xl text-center animate-fade-in flex flex-col items-center">
@@ -356,7 +482,7 @@ const BlogPostPage: React.FC = () => {
             </div>
 
             {/* Relevant Articles Section */}
-            <div>
+            <div className="transition-all duration-300">
                 <h2 className="text-3xl font-serif font-bold text-spirit-900 mb-8">You Might Also Like</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {relevantPosts.map((post) => (

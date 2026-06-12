@@ -6,8 +6,11 @@ import { useCart } from "../context/CartContext";
 import { Product } from "../data/products";
 import { BlogPost } from "../types";
 import { Tag, Lock, Heart, Book } from "lucide-react";
+import { BlogSectionsRenderer } from "../components/BlogSectionsRenderer";
 
 // Custom Typewriter component
+// ...
+
 const Typewriter = ({ text, delay = 100 }: { text: string; delay?: number }) => {
   const [currentText, setCurrentText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -48,6 +51,7 @@ export default function ServiceCategoryPage() {
   const [category, setCategory] = useState<any>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [blogSections, setBlogSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const { addToCart } = useCart();
@@ -118,20 +122,20 @@ export default function ServiceCategoryPage() {
       let queryPosts = supabase
         .from("posts")
         .select("*")
+        .eq("status", "published")
         .neq("category", "_page_section_")
-        .neq("category", "_form_lead_");
-      if (relatedArticleIds.length > 0) {
-        queryPosts = queryPosts.in("id", relatedArticleIds);
-      } else {
-        queryPosts = queryPosts.limit(6);
-      }
+        .neq("category", "_form_lead_")
+        .neq("category", "_banner_")
+        .neq("category", "_blog_section_");
 
-      // Fetch blogs
-      const { data: blogData } = await queryPosts;
+      // We need all posts so BlogSectionsRenderer can pick specific posts if assigned.
+      const [blogsRes, sectionsRes] = await Promise.all([
+          queryPosts,
+          supabase.from('posts').select('*').eq('category', '_blog_section_').order('created_at', { ascending: true })
+      ]);
 
-      if (blogData) {
-        setBlogs(
-          blogData.map((p: any) => ({
+      if (blogsRes.data) {
+        const allFormattedBlogs = blogsRes.data.map((p: any) => ({
             id: p.id,
             title: p.title,
             excerpt: p.excerpt,
@@ -143,8 +147,22 @@ export default function ServiceCategoryPage() {
             date: p.date,
             isLatest: p.is_latest,
             relatedIds: p.related_ids,
-          })),
-        );
+          }));
+          
+        const filteredForService = allFormattedBlogs; // Pass all posts to BlogSectionsRenderer
+        setBlogs(filteredForService);
+      }
+      
+      if (sectionsRes.data) {
+          const allSections = sectionsRes.data.map(s => {
+              let config: any = {};
+              try { config = JSON.parse(s.content) } catch(e) {}
+              return { id: s.id, title: s.title, subtitle: s.excerpt, config };
+          });
+          setBlogSections(allSections.filter(s => {
+              const pages = s.config.displayPages || (s.config.displayPage ? [s.config.displayPage] : ['all']);
+              return pages.includes(`service_${id}`) || pages.includes('all');
+          }));
       }
 
       setLoading(false);
@@ -329,6 +347,11 @@ export default function ServiceCategoryPage() {
         </section>
 
         {/* Bottom: Related Blogs/Articles */}
+        {blogSections.length > 0 ? (
+            <div className="mt-20">
+                <BlogSectionsRenderer sections={blogSections} allPosts={blogs} />
+            </div>
+        ) : blogs.filter((p: any) => category?.related_articles?.includes(p.id)).length > 0 || (blogs.length > 0 && (!category?.related_articles || category.related_articles.length === 0)) ? (
         <section>
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl md:text-3xl font-serif font-bold text-spirit-900">
@@ -342,7 +365,10 @@ export default function ServiceCategoryPage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {blogs.map((post) => (
+            {blogs
+                .filter((p: any) => category?.related_articles?.length > 0 ? category.related_articles.includes(p.id) : true)
+                .slice(0, 6)
+                .map((post) => (
               <Link
                 to={`/blog/${post.id}`}
                 key={post.id}
@@ -376,6 +402,7 @@ export default function ServiceCategoryPage() {
             ))}
           </div>
         </section>
+        ) : null}
       </div>
     </div>
   );

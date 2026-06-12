@@ -23,7 +23,11 @@ export const BannersTab: React.FC = () => {
       overlayColor: '#000000',
       overlayOpacity: '0.4',
       headingAnimation: 'fade-in-up', // 'fade-in-up' | 'pulse' | 'typewriter' | 'none'
-      textAnimation: 'fade-in-up'
+      textAnimation: 'fade-in-up',
+      headingSize: 'text-[2rem] sm:text-5xl md:text-8xl',
+      textSize: 'text-base sm:text-xl md:text-2xl',
+      spacing: 'mb-4 md:mb-6',
+      typewriterSpeed: 'normal'
     }
   });
 
@@ -80,7 +84,11 @@ export const BannersTab: React.FC = () => {
         overlayColor: '#000000',
         overlayOpacity: '0.4',
         headingAnimation: 'fade-in-up',
-        textAnimation: 'fade-in-up'
+        textAnimation: 'fade-in-up',
+        headingSize: 'text-[2rem] sm:text-5xl md:text-8xl',
+        textSize: 'text-base sm:text-xl md:text-2xl',
+        spacing: 'mb-4 md:mb-6',
+        typewriterSpeed: 'normal'
       }
     });
   };
@@ -101,7 +109,11 @@ export const BannersTab: React.FC = () => {
         overlayColor: '#000000',
         overlayOpacity: '0.4',
         headingAnimation: 'fade-in-up',
-        textAnimation: 'fade-in-up'
+        textAnimation: 'fade-in-up',
+        headingSize: 'text-[2rem] sm:text-5xl md:text-8xl',
+        textSize: 'text-base sm:text-xl md:text-2xl',
+        spacing: 'mb-4 md:mb-6',
+        typewriterSpeed: 'normal'
       }
     });
     setView('form');
@@ -212,72 +224,78 @@ export const BannersTab: React.FC = () => {
         </button>
       </div>
 
-      <form onSubmit={handleSave} className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 space-y-8">
+      <form onSubmit={handleSave} className="space-y-6">
         
-        {/* Basic Content */}
-        <div className="space-y-6">
-            <h2 className="text-xl font-bold text-gray-900">Banner Content</h2>
-            
+        {/* Content & Media section */}
+        <div className="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden">
+          <div className="bg-slate-50 px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-bold text-gray-900">Content & Media</h2>
+            <p className="text-sm text-gray-500">Define the core content and background image of this slide.</p>
+          </div>
+          <div className="p-6 space-y-6">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Heading Text</label>
-              <input required type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-spirit-500" placeholder="e.g. Divine Clarity" />
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Heading Text</label>
+              <input required type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition" placeholder="e.g. Divine Clarity" />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Sub-Text (Paragraph)</label>
-              <textarea rows={3} value={form.subtitle} onChange={e => setForm({...form, subtitle: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-spirit-500" placeholder="e.g. Experience profound inner peace..." />
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Sub-Text (Paragraph)</label>
+              <textarea rows={3} value={form.subtitle} onChange={e => setForm({...form, subtitle: e.target.value})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition" placeholder="e.g. Experience profound inner peace..." />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Button Text</label>
-                <input required type="text" value={form.linkText} onChange={e => setForm({...form, linkText: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-spirit-500" placeholder="e.g. Explore Our Path" />
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Button Text</label>
+                <input required type="text" value={form.linkText} onChange={e => setForm({...form, linkText: e.target.value})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition" placeholder="e.g. Explore Our Path" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Button Link / Target</label>
-                <input required type="text" value={form.linkTarget} onChange={e => setForm({...form, linkTarget: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-spirit-500" placeholder="e.g. #services or /store" />
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Button Link / Target</label>
+                <input required type="text" value={form.linkTarget} onChange={e => setForm({...form, linkTarget: e.target.value})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition" placeholder="e.g. #services or /store" />
               </div>
             </div>
             
             <div>
-              <div className="flex justify-between items-end mb-2">
-                <label className="block text-sm font-bold text-gray-700">Background Image URL</label>
+              <div className="flex justify-between items-end mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700">Background Image URL</label>
                 {form.imageUrl && (
                   <button 
                     type="button" 
                     onClick={() => setShowCropper(true)} 
-                    className="text-xs font-bold text-spirit-600 flex items-center hover:text-spirit-800"
+                    className="text-xs font-bold text-spirit-600 flex items-center hover:text-spirit-800 bg-spirit-50 px-2 py-1 rounded"
                   >
-                    <Crop className="w-3 h-3 mr-1" />
+                    <Crop className="w-3.5 h-3.5 mr-1" />
                     Preview & Crop
                   </button>
                 )}
               </div>
-              <input required type="text" value={form.imageUrl} onChange={e => setForm({...form, imageUrl: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-gray-300" placeholder="https://images.unsplash.com/photo-..." />
+              <input required type="text" value={form.imageUrl} onChange={e => setForm({...form, imageUrl: e.target.value})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition" placeholder="https://images.unsplash.com/photo-..." />
             </div>
+          </div>
         </div>
 
         {/* Styling & Animations */}
-        <div className="border-t border-gray-200 pt-8 space-y-6">
-          <h2 className="text-xl font-bold text-gray-900">Styling & Animations</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Image Transition Style</label>
-              <select value={form.config.imageTransition} onChange={e => setForm({...form, config: {...form.config, imageTransition: e.target.value}})} className="w-full px-4 py-2 rounded-lg border border-gray-300">
-                 <option value="none">None</option>
-                 <option value="zoom">Continuous Zoom</option>
-                 <option value="fade">Simple Fade</option>
-                 <option value="pan-up">Pan Up</option>
-                 <option value="pan-down">Pan Down</option>
-                 <option value="slide-left">Slide Left</option>
-                 <option value="slide-right">Slide Right</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden">
+          <div className="bg-slate-50 px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-bold text-gray-900">Styling & Animations</h2>
+            <p className="text-sm text-gray-500">Configure layout sizing, text effects, and display transitions.</p>
+          </div>
+          <div className="p-6 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Heading Animation</label>
-                <select value={form.config.headingAnimation || 'fade-in-up'} onChange={e => setForm({...form, config: {...form.config, headingAnimation: e.target.value}})} className="w-full px-4 py-2 rounded-lg border border-gray-300">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Image Transition Style</label>
+                <select value={form.config.imageTransition} onChange={e => setForm({...form, config: {...form.config, imageTransition: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition">
+                   <option value="none">None</option>
+                   <option value="zoom">Continuous Zoom</option>
+                   <option value="fade">Simple Fade</option>
+                   <option value="pan-up">Pan Up</option>
+                   <option value="pan-down">Pan Down</option>
+                   <option value="slide-left">Slide Left</option>
+                   <option value="slide-right">Slide Right</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Heading Animation</label>
+                <select value={form.config.headingAnimation || 'fade-in-up'} onChange={e => setForm({...form, config: {...form.config, headingAnimation: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition">
                    <option value="none">None</option>
                    <option value="fade-in-up">Fade In Up</option>
                    <option value="fade-in-down">Fade In Down</option>
@@ -293,11 +311,12 @@ export const BannersTab: React.FC = () => {
                    <option value="rotate-in">Rotate In</option>
                    <option value="swing">Swing</option>
                    <option value="typewriter">Typewriter Reveal</option>
+                   <option value="typing-infinite">Typewriter Infinite</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Text Animation</label>
-                <select value={form.config.textAnimation || 'fade-in-up'} onChange={e => setForm({...form, config: {...form.config, textAnimation: e.target.value}})} className="w-full px-4 py-2 rounded-lg border border-gray-300">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Text Animation</label>
+                <select value={form.config.textAnimation || 'fade-in-up'} onChange={e => setForm({...form, config: {...form.config, textAnimation: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition">
                    <option value="none">None</option>
                    <option value="fade-in-up">Fade In Up</option>
                    <option value="fade-in-down">Fade In Down</option>
@@ -312,27 +331,118 @@ export const BannersTab: React.FC = () => {
                    <option value="flip-in-y">Flip In Y</option>
                    <option value="rotate-in">Rotate In</option>
                    <option value="swing">Swing</option>
+                   <option value="typewriter">Typewriter Reveal</option>
+                   <option value="typing-infinite">Typewriter Infinite</option>
                 </select>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 space-y-6">
-            <h3 className="font-bold text-gray-800">Overlay Box Configuration</h3>
-            <p className="text-sm text-gray-500 mb-4">Configure the dark/colored overlay that sits between the background image and the text.</p>
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 bg-slate-50 border border-slate-200 rounded-xl p-6 mx-6 mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Heading Size</label>
+                <select value={form.config.headingSize || 'text-[2rem] sm:text-5xl md:text-8xl'} onChange={e => setForm({...form, config: {...form.config, headingSize: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition">
+                   <option value="text-[1.5rem] sm:text-3xl md:text-5xl">Small</option>
+                   <option value="text-[2rem] sm:text-4xl md:text-6xl">Medium</option>
+                   <option value="text-[2rem] sm:text-5xl md:text-8xl">Large (Default)</option>
+                   <option value="text-[3rem] sm:text-6xl md:text-9xl">Extra Large</option>
+                   <option disabled>──────────</option>
+                   <option value="text-[40px] md:text-[48px] font-bold">Heading 1 (H1)</option>
+                   <option value="text-[32px] md:text-[40px] font-bold">Heading 2 (H2)</option>
+                   <option value="text-[28px] md:text-[32px] font-bold">Heading 3 (H3)</option>
+                   <option value="text-[24px] md:text-[28px] font-bold">Heading 4 (H4)</option>
+                   <option value="text-[20px] md:text-[24px] font-bold">Heading 5 (H5)</option>
+                   <option value="text-[16px] md:text-[20px] font-bold">Heading 6 (H6)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Text Size</label>
+                <select value={form.config.textSize || 'text-base sm:text-xl md:text-2xl'} onChange={e => setForm({...form, config: {...form.config, textSize: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition">
+                   <option value="text-sm sm:text-base md:text-lg">Small</option>
+                   <option value="text-base sm:text-xl md:text-2xl">Medium (Default)</option>
+                   <option value="text-lg sm:text-2xl md:text-3xl">Large</option>
+                   <option disabled>──────────</option>
+                   <option value="text-[10px]">10px</option>
+                   <option value="text-[11px]">11px</option>
+                   <option value="text-[12px]">12px</option>
+                   <option value="text-[13px]">13px</option>
+                   <option value="text-[14px]">14px</option>
+                   <option value="text-[15px]">15px</option>
+                   <option value="text-[16px]">16px</option>
+                   <option value="text-[18px]">18px</option>
+                   <option value="text-[20px]">20px</option>
+                   <option value="text-[22px]">22px</option>
+                   <option value="text-[24px]">24px</option>
+                   <option value="text-[26px]">26px</option>
+                   <option value="text-[28px]">28px</option>
+                   <option value="text-[32px]">32px</option>
+                   <option value="text-[36px]">36px</option>
+                   <option value="text-[40px]">40px</option>
+                   <option value="text-[48px]">48px</option>
+                   <option value="text-[56px]">56px</option>
+                   <option value="text-[64px]">64px</option>
+                   <option value="text-[72px]">72px</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Vertical Spacing</label>
+                <select value={form.config.spacing || 'mb-4 md:mb-6'} onChange={e => setForm({...form, config: {...form.config, spacing: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition">
+                   <option value="mb-2 md:mb-4">Compact (Small)</option>
+                   <option value="mb-4 md:mb-6">Normal (Medium)</option>
+                   <option value="mb-8 md:mb-12">Loose (Large)</option>
+                   <option value="mb-12 md:mb-16">Very Loose (X-Large)</option>
+                   <option disabled>──────────</option>
+                   <option value="mb-[0px]">0px</option>
+                   <option value="mb-[1px]">1px</option>
+                   <option value="mb-[2px]">2px</option>
+                   <option value="mb-[4px]">4px</option>
+                   <option value="mb-[6px]">6px</option>
+                   <option value="mb-[8px]">8px</option>
+                   <option value="mb-[10px]">10px</option>
+                   <option value="mb-[12px]">12px</option>
+                   <option value="mb-[16px]">16px</option>
+                   <option value="mb-[20px]">20px</option>
+                   <option value="mb-[24px]">24px</option>
+                   <option value="mb-[28px]">28px</option>
+                   <option value="mb-[32px]">32px</option>
+                   <option value="mb-[40px]">40px</option>
+                   <option value="mb-[48px]">48px</option>
+                   <option value="mb-[56px]">56px</option>
+                   <option value="mb-[64px]">64px</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Typewriter Speed</label>
+                <select value={form.config.typewriterSpeed || 'normal'} onChange={e => setForm({...form, config: {...form.config, typewriterSpeed: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 focus:border-spirit-500 outline-none transition">
+                   <option value="fast">Fast</option>
+                   <option value="normal">Normal</option>
+                   <option value="slow">Slow</option>
+                   <option value="very-slow">Very Slow</option>
+                </select>
+              </div>
+          </div>
+        </div>
+
+        {/* Overlay Block */}
+        <div className="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden">
+          <div className="bg-slate-50 px-6 py-4 border-b border-gray-200">
+             <h3 className="text-lg font-bold text-gray-900">Overlay Interface Config</h3>
+             <p className="text-sm text-gray-500">Configure the background overlay framing the copy over the slide image.</p>
+          </div>
+          <div className="p-6">
+          
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Overlay Size / Width</label>
-                <input type="text" value={form.config.overlayWidth || '100%'} onChange={e => setForm({...form, config: {...form.config, overlayWidth: e.target.value}})} className="w-full px-4 py-2 rounded-lg border border-gray-300" placeholder="e.g. 100%, 50vw, 400px" />
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Overlay Size / Width</label>
+                <input type="text" value={form.config.overlayWidth || '100%'} onChange={e => setForm({...form, config: {...form.config, overlayWidth: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 outline-none transition" placeholder="e.g. 100%, 50vw, 400px" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Overlay Height</label>
-                <input type="text" value={form.config.overlayHeight} onChange={e => setForm({...form, config: {...form.config, overlayHeight: e.target.value}})} className="w-full px-4 py-2 rounded-lg border border-gray-300" placeholder="e.g. 100%, 50vh, 20rem" />
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Overlay Height</label>
+                <input type="text" value={form.config.overlayHeight} onChange={e => setForm({...form, config: {...form.config, overlayHeight: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 outline-none transition" placeholder="e.g. 100%, 50vh, 20rem" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Overlay Position</label>
-                <select value={form.config.overlayPosition || 'bottom'} onChange={e => setForm({...form, config: {...form.config, overlayPosition: e.target.value}})} className="w-full px-4 py-2 rounded-lg border border-gray-300">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Overlay Position</label>
+                <select value={form.config.overlayPosition || 'bottom'} onChange={e => setForm({...form, config: {...form.config, overlayPosition: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 outline-none transition">
                    <option value="bottom">Bottom</option>
                    <option value="top">Top</option>
                    <option value="left">Left</option>
@@ -341,24 +451,24 @@ export const BannersTab: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Overlay Color</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Overlay Color</label>
                 <div className="flex gap-2">
-                    <input type="color" value={form.config.overlayColor} onChange={e => setForm({...form, config: {...form.config, overlayColor: e.target.value}})} className="w-12 h-10 px-1 py-1 rounded border border-gray-300 cursor-pointer aspect-square" />
-                    <input type="text" value={form.config.overlayColor} onChange={e => setForm({...form, config: {...form.config, overlayColor: e.target.value}})} className="w-full px-4 py-2 rounded-lg border border-gray-300 font-mono text-sm uppercase" />
+                    <input type="color" value={form.config.overlayColor} onChange={e => setForm({...form, config: {...form.config, overlayColor: e.target.value}})} className="w-12 h-[42px] px-1 py-1 rounded border border-gray-300 cursor-pointer object-cover shrink-0" />
+                    <input type="text" value={form.config.overlayColor} onChange={e => setForm({...form, config: {...form.config, overlayColor: e.target.value}})} className="w-full px-4 py-2.5 rounded-lg border border-gray-300 font-mono text-sm uppercase focus:ring-2 focus:ring-spirit-500 outline-none transition" />
                 </div>
               </div>
-              <div className="md:col-span-4">
-                <label className="block text-sm font-bold text-gray-700 mb-2">Transparency (Opacity)</label>
-                <div className="flex items-center gap-4">
-                  <input type="range" min="0" max="1" step="0.05" value={form.config.overlayOpacity} onChange={e => setForm({...form, config: {...form.config, overlayOpacity: e.target.value}})} className="flex-1" />
-                  <span className="font-bold text-gray-700 w-12 text-right">{Math.round(parseFloat(form.config.overlayOpacity) * 100)}%</span>
+              <div className="md:col-span-4 bg-slate-50/50 p-4 rounded-lg border border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-semibold text-gray-700">Transparency</label>
+                  <span className="font-bold text-spirit-800 text-sm">{Math.round(parseFloat(form.config.overlayOpacity) * 100)}%</span>
                 </div>
+                <input type="range" min="0" max="1" step="0.05" value={form.config.overlayOpacity} onChange={e => setForm({...form, config: {...form.config, overlayOpacity: e.target.value}})} className="w-full accent-spirit-600 cursor-pointer h-2 bg-gray-200 rounded-lg appearance-none" />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="pt-6 border-t border-gray-100 flex justify-end">
+        <div className="flex justify-end pt-4">
           <button type="submit" disabled={isLoading} className="bg-spirit-900 text-white px-8 py-3 rounded-lg font-bold hover:bg-spirit-800 flex items-center min-w-[150px] shadow-lg transition">
              {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2"/> : <Plus className="w-5 h-5 mr-2" />}
              {isLoading ? 'Saving...' : 'Save Banner'}

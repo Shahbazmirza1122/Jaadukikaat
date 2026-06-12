@@ -34,6 +34,8 @@ import DynamicSection from "../components/DynamicSection";
 import { PageSection } from "../types";
 import { usePageSections } from "../hooks/usePageSections";
 import { useCart } from "../context/CartContext";
+import { TypewriterText } from "../components/TypewriterText";
+import { BlogSectionsRenderer } from "../components/BlogSectionsRenderer";
 
 // Dummy Data for Fallback
 const dummyBlogPosts: BlogPost[] = [
@@ -103,6 +105,8 @@ const dummyBlogPosts: BlogPost[] = [
 const Home: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [allPosts, setAllPosts] = useState<BlogPost[]>([]);
+  const [blogSections, setBlogSections] = useState<any[]>([]);
   const [productsList, setProductsList] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [bannerSlides, setBannerSlides] = useState<any[]>([]);
@@ -132,28 +136,62 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const { data, error } = await supabase
-          .from("posts")
-          .select("*")
-          .eq("status", "published")
-          .neq("category", "_page_section_")
-          .neq("category", "_form_lead_")
-          .neq("category", "_banner_")
-          .order("created_at", { ascending: false });
+        const [postsRes, sectionsRes] = await Promise.all([
+           supabase
+            .from("posts")
+            .select("*")
+            .eq("status", "published")
+            .neq("category", "_page_section_")
+            .neq("category", "_form_lead_")
+            .neq("category", "_banner_")
+            .neq("category", "_blog_section_")
+            .order("created_at", { ascending: false }),
+           supabase.from('posts').select('*').eq('category', '_blog_section_').order('created_at', { ascending: true })
+        ]);
 
-        if (error || !data || data.length === 0) {
+        if (postsRes.error || !postsRes.data || postsRes.data.length === 0) {
           // Use dummy data if DB is empty or error occurs
           console.log("Using fallback blog data");
           setBlogPosts(dummyBlogPosts);
         } else {
-          setBlogPosts(
-            data.map((p: any) => ({
+          const allFormattedPosts = postsRes.data.map((p: any) => ({
               ...p,
               imageUrl: p.image_url || p.imageUrl,
               relatedIds: p.related_ids || p.relatedIds,
-            })),
-          );
+          }));
+          
+          setAllPosts(allFormattedPosts);
+
+          const filteredForHome = allFormattedPosts.filter((p: any) => {
+              try {
+                  if (p.relatedIds) {
+                     const idData = Array.isArray(p.relatedIds) ? p.relatedIds[0] : p.relatedIds;
+                     if (idData && typeof idData === 'string') {
+                         const config = JSON.parse(idData);
+                         if (config.displayPage && config.displayPage !== 'all' && config.displayPage !== 'home') {
+                             return false; // it belongs to another page specifically
+                         }
+                     }
+                  }
+              } catch(e) {}
+              return true;
+          });
+          
+          setBlogPosts(filteredForHome);
         }
+
+        if (sectionsRes.data) {
+             const allSections = sectionsRes.data.map(s => {
+                 let config: any = {};
+                 try { config = JSON.parse(s.content) } catch(e) {}
+                 return { id: s.id, title: s.title, subtitle: s.excerpt, config };
+             });
+             setBlogSections(allSections.filter(s => {
+                 const pages = s.config.displayPages || (s.config.displayPage ? [s.config.displayPage] : ['all']);
+                 return pages.includes('home') || pages.includes('all');
+             }));
+        }
+
       } catch (err) {
         console.warn(
           "Failed to fetch blogs (network/offline), using fallback:",
@@ -207,7 +245,7 @@ const Home: React.FC = () => {
           .order("created_at", { ascending: true });
 
         if (!error && data && data.length > 0) {
-           const mappedBanners = data.map((p: any) => {
+             const mappedBanners = data.map((p: any) => {
               let config = {
                  imageTransition: 'zoom',
                  overlayHeight: '100%',
@@ -216,10 +254,14 @@ const Home: React.FC = () => {
                  overlayColor: '#000000',
                  overlayOpacity: '0.4',
                  headingAnimation: 'fade-in-up',
-                 textAnimation: 'fade-in-up'
+                 textAnimation: 'fade-in-up',
+                 headingSize: 'text-[2rem] sm:text-5xl md:text-8xl',
+                 textSize: 'text-base sm:text-xl md:text-2xl',
+                 spacing: 'mb-4 md:mb-6',
+                 typewriterSpeed: 'normal'
               };
               try {
-                if(p.content) config = JSON.parse(p.content);
+                if(p.content) config = { ...config, ...JSON.parse(p.content) };
               } catch(e) {}
               return {
                  id: p.id,
@@ -320,32 +362,7 @@ const Home: React.FC = () => {
   const [contactPhone, setContactPhone] = useState("");
   const [contactMessage, setContactMessage] = useState("");
 
-  const slides = [
-    {
-      title: "Jaadu ki kaat",
-      subtitle:
-        "Experience profound inner peace through sacred spiritual remedies and guided growth.",
-      image:
-        "https://images.unsplash.com/photo-1506126613408-eca07ce68773?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-      cta: "Explore Our Path",
-    },
-    {
-      title: "Spiritual Shifa",
-      subtitle:
-        "Personalized solutions for the soul through Duaa, Wazaif, and ancient wisdom.",
-      image:
-        "https://images.unsplash.com/photo-1499209974431-9dac3adaf471?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-      cta: "Seek Guidance",
-    },
-    {
-      title: "Divine Clarity",
-      subtitle:
-        "Neutralizing metaphysical hurdles to restore balance and harmony in your life.",
-      image:
-        "https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-      cta: "Start Healing",
-    },
-  ];
+  const slides: any[] = [];
 
   const servicesList = [
     {
@@ -388,6 +405,7 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const slideCount = bannerSlides.length > 0 ? bannerSlides.length : slides.length;
+    if (slideCount === 0) return;
     const timer = setInterval(
       () => setCurrentSlide((prev) => (prev + 1) % slideCount),
       6000,
@@ -753,19 +771,29 @@ const Home: React.FC = () => {
           }
           
           let headingAnimClass = "opacity-0";
+          let isHeadingTypewriter = false;
+          let isHeadingInfinite = false;
           if(index === currentSlide) {
              if(config.headingAnimation === 'none') {
                 headingAnimClass = "opacity-100";
-             } else if(config.headingAnimation === 'typewriter') {
-                headingAnimClass = "animate-typing overflow-hidden whitespace-nowrap border-r-4 border-accent-500 pr-2";
+             } else if(config.headingAnimation === 'typewriter' || config.headingAnimation === 'typing-infinite') {
+                isHeadingTypewriter = true;
+                isHeadingInfinite = config.headingAnimation === 'typing-infinite';
+                headingAnimClass = "opacity-100";
              } else {
                 headingAnimClass = `animate-${config.headingAnimation}`;
              }
           }
 
           let textAnimClass = "opacity-0";
+          let isTextTypewriter = false;
+          let isTextInfinite = false;
           if(index === currentSlide) {
              if(config.textAnimation === 'none') {
+                 textAnimClass = "opacity-100";
+             } else if(config.textAnimation === 'typewriter' || config.textAnimation === 'typing-infinite') {
+                 isTextTypewriter = true;
+                 isTextInfinite = config.textAnimation === 'typing-infinite';
                  textAnimClass = "opacity-100";
              } else {
                  textAnimClass = `animate-${config.textAnimation}`;
@@ -831,14 +859,20 @@ const Home: React.FC = () => {
               <div
                 className={`max-w-3xl ${index === currentSlide ? "opacity-100" : "opacity-0"}`}
               >
-                <h1
-                  className={`text-[2rem] sm:text-5xl md:text-8xl font-serif font-bold text-white mb-4 md:mb-6 drop-shadow-2xl leading-tight w-max ${headingAnimClass}`}
-                >
-                  {slide.title}
-                </h1>
-                <p className={`text-base sm:text-xl md:text-2xl text-slate-200 mb-6 md:mb-10 font-light leading-relaxed drop-shadow-lg max-w-2xl ${textAnimClass}`}>
-                  {slide.subtitle}
-                </p>
+                <div className={`${config.headingSize || 'text-[2rem] sm:text-5xl md:text-8xl'} font-serif font-bold text-white ${config.spacing || 'mb-4 md:mb-6'} drop-shadow-2xl leading-tight ${headingAnimClass}`}>
+                  {isHeadingTypewriter ? (
+                    <TypewriterText text={slide.title} infinite={isHeadingInfinite} speed={config.typewriterSpeed === 'fast' ? 20 : config.typewriterSpeed === 'slow' ? 80 : config.typewriterSpeed === 'very-slow' ? 150 : 50} className="w-full" />
+                  ) : (
+                    <h1 className="w-max max-w-full">{slide.title}</h1>
+                  )}
+                </div>
+                <div className={`${config.textSize || 'text-base sm:text-xl md:text-2xl'} text-slate-200 mb-6 md:mb-10 font-light leading-relaxed drop-shadow-lg max-w-2xl ${textAnimClass}`}>
+                  {isTextTypewriter ? (
+                    <TypewriterText text={slide.subtitle} infinite={isTextInfinite} speed={config.typewriterSpeed === 'fast' ? 15 : config.typewriterSpeed === 'slow' ? 60 : config.typewriterSpeed === 'very-slow' ? 100 : 30} className="w-full" />
+                  ) : (
+                    <p>{slide.subtitle}</p>
+                  )}
+                </div>
                 <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 pointer-events-auto">
                   <a
                     href={slide.linkTarget || "#services"}
@@ -1389,7 +1423,13 @@ const Home: React.FC = () => {
       </section>
 
       {/* NEW: Blog Carousel Section */}
-      {blogPosts.length > 0 && (
+      {allPosts.length > 0 && blogSections.length > 0 ? (
+          <div className="py-20 bg-white border-t border-slate-50 overflow-hidden px-6">
+             <div className="max-w-7xl mx-auto w-full">
+                <BlogSectionsRenderer sections={blogSections} allPosts={allPosts} />
+             </div>
+          </div>
+      ) : blogPosts.length > 0 ? (
         <section className="py-20 bg-white border-t border-slate-50 overflow-hidden">
           <div className="max-w-7xl mx-auto px-6 mb-12 text-center">
             <span className="text-accent-600 font-bold tracking-[0.3em] uppercase text-xs mb-3 block">
@@ -1445,7 +1485,7 @@ const Home: React.FC = () => {
             )}
           </div>
         </section>
-      )}
+      ) : null}
       
       {/* Target: home or / page sections */}
       {pageSections.filter(sec => sec.pageTarget === 'home' || sec.pageTarget === '/').map(section => (

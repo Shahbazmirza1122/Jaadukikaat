@@ -1,11 +1,15 @@
 
 import React, { useEffect, useState } from 'react';
-import { Calendar, User, ArrowRight, CircleX, Book } from 'lucide-react';
+import { Calendar, User, ArrowRight, CircleX, Book, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { BlogPost } from '../types';
 import { supabase } from '../lib/supabase';
 
 // --- Dummy Data for Demonstration ---
+import { BlogSectionsRenderer } from '../components/BlogSectionsRenderer';
+
 const dummyLatestPost: BlogPost = {
   id: 'd1',
   title: "Finding Stillness: The Power of a Silent Heart in a Noisy World",
@@ -95,11 +99,36 @@ const dummyOtherPosts: BlogPost[] = [
 const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [latest, setLatest] = useState<BlogPost | null>(null);
+  const [allPagePosts, setAllPagePosts] = useState<BlogPost[]>([]);
+  const [sections, setSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
-  
+  const [currentLang, setCurrentLang] = useState<'en' | 'ur'>('en');
+
   const categoryFilter = searchParams.get('category');
   const searchFilter = searchParams.get('search');
+
+  const handleLanguageToggle = () => {
+    const newLang = currentLang === 'en' ? 'ur' : 'en';
+    
+    // Google Translate uses .goog-te-combo to change language programmatically
+    const gtSelect = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+    if (gtSelect) {
+      gtSelect.value = newLang;
+      gtSelect.dispatchEvent(new Event('change'));
+      setCurrentLang(newLang);
+    } else {
+      // Fallback if script hasn't loaded yet
+      setTimeout(() => {
+        const retrySelect = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+        if (retrySelect) {
+            retrySelect.value = newLang;
+            retrySelect.dispatchEvent(new Event('change'));
+            setCurrentLang(newLang);
+        }
+      }, 500);
+    }
+  };
 
   useEffect(() => {
     if (!categoryFilter && !searchFilter) {
@@ -115,25 +144,76 @@ const Blog: React.FC = () => {
             .eq('status', 'published')
             .neq('category', '_page_section_')
             .neq('category', '_form_lead_')
+            .neq('category', '_banner_')
+            .neq('category', '_blog_section_')
             .order('created_at', { ascending: false });
 
         if (categoryFilter) {
             query = query.eq('category', categoryFilter);
         }
 
-        const { data, error } = await query;
+        const [postsRes, sectionsRes] = await Promise.all([
+          query,
+          supabase.from('posts').select('*').eq('category', '_blog_section_').order('created_at', { ascending: true })
+        ]);
         
         // --- Fallback to Dummy Data ---
         let publishedPosts: BlogPost[];
-        if (error || !data || data.length === 0) {
+        if (postsRes.error || !postsRes.data || postsRes.data.length === 0) {
             publishedPosts = [dummyLatestPost, ...dummyOtherPosts];
         } else {
-             publishedPosts = (data || []).map((p: any) => ({
+            const allParsed = (postsRes.data || []).map((p: any) => ({
                 ...p,
                 imageUrl: p.image_url || p.imageUrl,
                 relatedIds: p.related_ids || p.relatedIds,
                 isLatest: p.is_latest || p.isLatest
             }));
+            
+            // For sections renderer, we need to provide all valid posts the website has,
+            // or at least all posts that *could* belong to this page's sections
+            const validPagePosts = allParsed.filter(p => p.status !== 'draft');
+            setAllPagePosts(validPagePosts);
+            
+            // publishedPosts is used for the generic blog grid/feed
+            publishedPosts = allParsed.filter((p: any) => {
+              let displayPage = 'all';
+              let displaySection = 'all';
+              try {
+                  if (p.relatedIds) {
+                     const idData = Array.isArray(p.relatedIds) ? p.relatedIds[0] : p.relatedIds;
+                     if (idData && typeof idData === 'string') {
+                         const config = JSON.parse(idData);
+                         displayPage = config.displayPage || 'all';
+                         displaySection = config.displaySection || 'all';
+                     }
+                  }
+              } catch(e) {}
+              
+              // "when a blog will post other than blog page it should be updated to the blog page"
+              // So we DO NOT filter by displayPage here. Everything comes to the Blog page feed 
+              // unconditionally (as long as it fits other criteria).
+              
+              // "but if the admin choose to display it on the blog page then it should only be display to the blog page once under specific section and category"
+              // If it's explicitly assigned to a specific layout section (displaySection),
+              // it's rendered by the BlogSectionsRenderer and MUST NOT be in the generic grid feed.
+              if (displaySection && displaySection !== 'all') {
+                  return false;
+              }
+              
+              return true;
+            });
+        }
+
+        if (sectionsRes.data) {
+             const allSections = sectionsRes.data.map(s => {
+                 let config: any = {};
+                 try { config = JSON.parse(s.content) } catch(e) {}
+                 return { id: s.id, title: s.title, subtitle: s.excerpt, config };
+             });
+             setSections(allSections.filter(s => {
+                 const pages = s.config.displayPages || (s.config.displayPage ? [s.config.displayPage] : ['all']);
+                 return pages.includes('blog') || pages.includes('all');
+             }));
         }
 
         // In-memory Search Filtering
@@ -174,10 +254,21 @@ const Blog: React.FC = () => {
   };
 
   return (
-    <div className="bg-spirit-50 min-h-screen pt-32">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold text-spirit-900 mb-4">Jaadu ki kaat Journal</h1>
+    <div className="bg-spirit-50 min-h-screen pt-[160px] md:pt-[220px] pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+        <div className="text-center mb-12 relative">
+          <div className="flex flex-col md:flex-row items-center justify-center relative mb-4 min-h-[48px]">
+            <h1 className="text-4xl md:text-5xl font-serif font-bold text-spirit-900">Jaadu ki kaat Journal</h1>
+            <div className="md:absolute right-0 mt-4 md:mt-0">
+              <button 
+                  onClick={handleLanguageToggle}
+                  className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-spirit-200 hover:bg-spirit-50 transition-colors text-sm font-semibold text-spirit-800"
+              >
+                  <Globe className="w-4 h-4 text-spirit-600" />
+                  {currentLang === 'en' ? 'Translate to Urdu' : 'Switch to English'}
+              </button>
+            </div>
+          </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">Insights, stories, and wisdom to illuminate your spiritual path.</p>
         </div>
 
@@ -195,9 +286,9 @@ const Blog: React.FC = () => {
         )}
 
         {loading ? (
-             <div className="animate-pulse space-y-12">
+             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-pulse space-y-12">
                 {/* Featured Post Skeleton */}
-                <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-spirit-100 h-[400px] lg:h-[350px] flex flex-col lg:flex-row">
+                <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-spirit-100 h-[400px] flex flex-col lg:flex-row">
                     <div className="h-64 lg:h-full lg:w-2/5 bg-slate-200"></div>
                     <div className="p-8 flex flex-col lg:w-3/5 space-y-4">
                         <div className="flex gap-4">
@@ -235,11 +326,10 @@ const Blog: React.FC = () => {
         ) : (
             <>
                 {latest && (
-                <div className="mb-16 animate-fade-in">
-                    <div className="bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300 border border-spirit-100 group lg:h-[350px]">
-                        <div className="flex flex-col lg:flex-row h-full">
-                            <div className="h-64 lg:h-full lg:w-2/5 overflow-hidden">
-                                <Link to={`/blog/${latest.id}`}>
+                    <div className="w-[96%] mx-auto mb-16 animate-fade-in">
+                        <div className="bg-white rounded-[2.5rem] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 group flex flex-col lg:flex-row items-stretch">
+                            <div className="lg:w-1/2 p-2 relative h-64 lg:h-auto min-h-[400px]">
+                                <Link to={`/blog/${latest.id}`} className="block w-full h-full rounded-[2rem] overflow-hidden relative">
                                     <img 
                                         src={latest.imageUrl} 
                                         alt={latest.title} 
@@ -247,50 +337,60 @@ const Blog: React.FC = () => {
                                     />
                                 </Link>
                             </div>
-                            <div className="p-8 flex flex-col lg:w-3/5">
-                                <div className="flex items-center text-sm text-spirit-500 mb-3 space-x-4">
-                                    <span className="bg-spirit-100 text-spirit-800 px-3 py-1 rounded-full font-bold text-xs uppercase tracking-wide">Latest Feature</span>
-                                    <span className="hidden sm:flex items-center"><Calendar size={14} className="mr-1" /> {latest.date}</span>
+                            <div className="p-8 md:p-12 flex flex-col justify-center lg:w-1/2">
+                                <div className="mb-6">
+                                     <span className="bg-spirit-50 text-spirit-700 px-4 py-2 rounded-full font-medium text-sm border border-spirit-100">
+                                         {latest.category || 'Guidelines'}
+                                     </span>
                                 </div>
-                                <Link to={`/blog/${latest.id}`} className="block">
-                                    <h2 className="text-2xl font-serif font-bold text-gray-900 mb-2 group-hover:text-spirit-600 transition-colors line-clamp-2">
+                                <h2 className="text-3xl md:text-[2.5rem] font-bold text-gray-900 mb-6 leading-tight group-hover:text-spirit-600 transition-colors">
                                     {latest.title}
-                                    </h2>
-                                </Link>
-                                <p className="text-gray-700 text-base mb-4 leading-relaxed line-clamp-5 flex-grow font-light">
+                                </h2>
+                                <p className="text-gray-500 text-lg mb-8 leading-relaxed font-light line-clamp-4">
                                     {latest.excerpt}
                                 </p>
-                                <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
-                                    <div className="flex items-center text-sm text-gray-500">
-                                    <User size={16} className="mr-2" />
-                                    {latest.author}
+                                
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mt-auto">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-spirit-50 border border-spirit-100 rounded-full flex items-center justify-center text-spirit-600">
+                                            <User size={20} />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-gray-900">{latest.author}</div>
+                                            <div className="text-gray-500 text-sm">{latest.date}</div>
+                                        </div>
                                     </div>
-                                    <Link to={`/blog/${latest.id}`} className="text-spirit-600 font-bold hover:text-spirit-800 flex items-center transition-colors text-sm">
-                                    Read Article <ArrowRight size={16} className="ml-2" />
+                                    <Link to={`/blog/${latest.id}`} className="bg-spirit-600 hover:bg-spirit-700 text-white font-semibold py-3 mt-4 sm:mt-0 px-8 rounded-xl transition-all shadow-md hover:shadow-lg inline-flex items-center justify-center">
+                                        Read Article
                                     </Link>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
                 )}
+                
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    {sections.length > 0 && !categoryFilter && !searchFilter ? (
+                         <BlogSectionsRenderer sections={sections} allPosts={allPagePosts} />
+                    ) : (
+                        <>
+                            {!latest && posts.length === 0 && (
+                            <div className="text-center py-24 bg-white rounded-xl shadow-sm mb-12 border border-gray-100">
+                                <div className="text-6xl mb-4">🔍</div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">No articles found</h3>
+                                <p className="text-gray-500 italic mb-6">Try adjusting your search or filters.</p>
+                                <button onClick={clearFilters} className="text-spirit-600 font-bold hover:underline">View All Articles</button>
+                            </div>
+                            )}
 
-                {!latest && posts.length === 0 && (
-                <div className="text-center py-24 bg-white rounded-xl shadow-sm mb-12 border border-gray-100">
-                    <div className="text-6xl mb-4">🔍</div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">No articles found</h3>
-                    <p className="text-gray-500 italic mb-6">Try adjusting your search or filters.</p>
-                    <button onClick={clearFilters} className="text-spirit-600 font-bold hover:underline">View All Articles</button>
-                </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {posts.map((post) => (
-                  <Link
-                    to={`/blog/${post.id}`}
-                    key={post.id}
-                    className="bg-white rounded-3xl border border-spirit-100 shadow-lg overflow-hidden flex flex-col h-[450px] group animate-fade-in"
-                  >
+                            {posts.length > 0 && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {posts.map((post) => (
+                                  <Link
+                                    to={`/blog/${post.id}`}
+                                    key={post.id}
+                                    className="bg-white rounded-3xl border border-spirit-100 shadow-lg overflow-hidden flex flex-col h-[450px] group animate-fade-in"
+                                  >
                       <div className="h-56 relative overflow-hidden">
                         <img
                           src={post.imageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e"}
@@ -316,7 +416,11 @@ const Blog: React.FC = () => {
                         </div>
                       </div>
                   </Link>
-                ))}
+                                ))}
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </>
         )}

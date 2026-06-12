@@ -56,6 +56,7 @@
               'bounce-slow': 'bounce 3s infinite',
               'marquee': 'marquee 25s linear infinite',
               'typing': 'typing 3.5s steps(40, end), blink .75s step-end infinite',
+              'typing-infinite': 'typing-infinite 5s steps(40, end) infinite, blink .75s step-end infinite',
             },
             keyframes: {
               fadeIn: {
@@ -127,6 +128,11 @@
                 '0%': { width: '0' },
                 '100%': { width: '100%' },
               },
+              'typing-infinite': {
+                '0%, 15%': { width: '0' },
+                '40%, 85%': { width: '100%' },
+                '100%': { width: '0' },
+              },
               blink: {
                 'from, to': { borderColor: 'transparent' },
                 '50%': { borderColor: '#6a89a7' }, // accent-500 color
@@ -155,6 +161,11 @@
         mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
         -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
       }
+      
+      /* Hide Google Translate completely, we will use custom button */
+      .goog-te-banner-frame.skiptranslate { display: none !important; }
+      body { top: 0px !important; }
+      #google_translate_element { display: none !important; }
     </style>
 <script type="importmap">
 {
@@ -173,6 +184,17 @@
 </script>
 </head>
   <body>
+    <div id="google_translate_element"></div>
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,ur',
+          autoDisplay: false
+        }, 'google_translate_element');
+      }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <div id="root"></div>
     <!-- Vite entry point -->
     <script type="module" src="/index.tsx"></script>

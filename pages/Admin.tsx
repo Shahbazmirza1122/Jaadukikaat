@@ -39,6 +39,8 @@ import { UsersTab } from "../components/UsersTab";
 import { EmailTab } from "../components/EmailTab";
 import { OrdersTab } from "../components/OrdersTab";
 import { BannersTab } from "../components/BannersTab";
+import { BlogSectionsTab } from "../components/BlogSectionsTab";
+import { BlogCategoriesTab } from "../components/BlogCategoriesTab";
 import { supabase } from "../lib/supabase";
 import { Product } from "../data/products";
 
@@ -84,30 +86,36 @@ const Admin: React.FC = () => {
 
   // Blog State
   const [blogView, setBlogView] = useState<"list" | "form">("list");
+  const [blogSubTab, setBlogSubTab] = useState<"posts" | "categories" | "sections">("posts");
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [editPostId, setEditPostId] = useState<string | null>(null);
-  const [blogForm, setBlogForm] = useState<Omit<BlogPost, "id">>({
+  const [blogForm, setBlogForm] = useState<Omit<BlogPost, "id"> & { displayPage?: string, displaySection?: string }>({
     title: "",
     excerpt: "",
     content: "",
     author: "",
-    date: new Date().toISOString().split("T")[0],
+    date: new Date().toISOString().slice(0, 16),
     imageUrl: "",
     category: "",
     status: "draft",
+    displayPage: "all",
+    displaySection: "all",
   });
 
   const handleSwitchToBlogCreate = () => {
+    fetchPosts();
     setEditPostId(null);
     setBlogForm({
       title: "",
       excerpt: "",
       content: "",
       author: "",
-      date: new Date().toISOString().split("T")[0],
+      date: new Date().toISOString().slice(0, 16),
       imageUrl: "",
       category: "",
       status: "draft",
+      displayPage: "all",
+      displaySection: "all",
     });
     setBlogView("form");
   };
@@ -118,16 +126,41 @@ const Admin: React.FC = () => {
   };
 
   const handleEditPost = (post: BlogPost) => {
+    fetchPosts();
     setEditPostId(post.id);
+    
+    let parsedDisplayPage = "all";
+    let parsedDisplaySection = "all";
+    let parsedDate = post.date || new Date().toISOString().slice(0, 16);
+    
+    // Parse related_ids specifically array safely
+    if (post.relatedIds && Array.isArray(post.relatedIds)) {
+        if (post.relatedIds.length > 0) {
+            try {
+                const parsed = JSON.parse(post.relatedIds[0]);
+                if (parsed.displayPage) parsedDisplayPage = parsed.displayPage;
+                if (parsed.displaySection) parsedDisplaySection = parsed.displaySection;
+            } catch(e) {}
+        }
+    } else if (post.relatedIds && typeof post.relatedIds === 'string') {
+        try {
+            const parsed = JSON.parse(post.relatedIds);
+            if (parsed.displayPage) parsedDisplayPage = parsed.displayPage;
+            if (parsed.displaySection) parsedDisplaySection = parsed.displaySection;
+        } catch(e) {}
+    }
+    
     setBlogForm({
       title: post.title || "",
       excerpt: post.excerpt || "",
       content: post.content || "",
       author: post.author || "",
-      date: post.date || new Date().toISOString().split("T")[0],
+      date: parsedDate.length === 10 ? `${parsedDate}T12:00` : parsedDate.slice(0, 16),
       imageUrl: post.imageUrl || "",
       category: post.category || "",
       status: post.status || "draft",
+      displayPage: parsedDisplayPage,
+      displaySection: parsedDisplaySection,
     });
     setBlogView("form");
   };
@@ -165,6 +198,7 @@ const Admin: React.FC = () => {
           image_url: blogForm.imageUrl,
           category: blogForm.category,
           status: blogForm.status,
+          related_ids: [JSON.stringify({ displayPage: blogForm.displayPage || "all", displaySection: blogForm.displaySection || "all" })],
         })
         .eq("id", editPostId);
 
@@ -187,6 +221,7 @@ const Admin: React.FC = () => {
           image_url: blogForm.imageUrl,
           category: blogForm.category,
           status: blogForm.status,
+          related_ids: [JSON.stringify({ displayPage: blogForm.displayPage || "all", displaySection: blogForm.displaySection || "all" })],
         },
       ]);
 
@@ -1173,18 +1208,45 @@ create policy "Enable all access for all users" on public.posts for all using (t
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
               <div>
                 <h1 className="text-3xl font-serif font-bold text-gray-800">
-                  {blogView === "list"
+                  {blogView === "list" && blogSubTab === "posts"
                     ? "All Posts"
-                    : editPostId
-                      ? "Edit Post"
-                      : "Add New Post"}
+                    : blogView === "list" && blogSubTab === "categories"
+                      ? "Categories"
+                      : blogView === "list" && blogSubTab === "sections"
+                        ? "Blog Page Layout"
+                        : editPostId
+                          ? "Edit Post"
+                          : "Add New Post"}
                 </h1>
                 <p className="text-gray-500 text-sm mt-1">
                   Manage your spiritual insights and articles here.
                 </p>
               </div>
 
-              {blogView === "list" ? (
+              {blogView === "list" && (
+                <div className="flex bg-gray-100 p-1 rounded-lg">
+                  <button
+                    onClick={() => { setBlogSubTab("posts"); fetchPosts(); }}
+                    className={`px-4 py-2 rounded-md text-sm font-bold transition ${blogSubTab === "posts" ? "bg-white shadow-sm text-spirit-900" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    Posts
+                  </button>
+                  <button
+                    onClick={() => setBlogSubTab("categories")}
+                    className={`px-4 py-2 rounded-md text-sm font-bold transition ${blogSubTab === "categories" ? "bg-white shadow-sm text-spirit-900" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    Categories
+                  </button>
+                  <button
+                    onClick={() => setBlogSubTab("sections")}
+                    className={`px-4 py-2 rounded-md text-sm font-bold transition ${blogSubTab === "sections" ? "bg-white shadow-sm text-spirit-900" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    Layout Sections
+                  </button>
+                </div>
+              )}
+
+              {blogView === "list" && blogSubTab === "posts" ? (
                 <button
                   onClick={handleSwitchToBlogCreate}
                   className="bg-spirit-600 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-spirit-700 transition shadow-md flex items-center"
@@ -1192,7 +1254,7 @@ create policy "Enable all access for all users" on public.posts for all using (t
                   <Plus className="w-5 h-5 mr-2" />
                   New Post
                 </button>
-              ) : (
+              ) : blogView === "form" ? (
                 <button
                   onClick={handleSwitchToBlogList}
                   className="bg-white text-gray-600 font-bold py-2.5 px-6 rounded-lg border border-gray-200 hover:bg-gray-50 transition flex items-center"
@@ -1200,10 +1262,18 @@ create policy "Enable all access for all users" on public.posts for all using (t
                   <ArrowLeft className="w-5 h-5 mr-2" />
                   Back to List
                 </button>
-              )}
+              ) : null}
             </div>
 
-            {blogView === "list" ? (
+            {blogView === "list" && blogSubTab === "categories" && (
+              <BlogCategoriesTab />
+            )}
+
+            {blogView === "list" && blogSubTab === "sections" && (
+              <BlogSectionsTab />
+            )}
+
+            {blogView === "list" && blogSubTab === "posts" && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
@@ -1230,7 +1300,7 @@ create policy "Enable all access for all users" on public.posts for all using (t
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {posts.length === 0 ? (
+                      {posts.filter(p => !['_blog_section_', '_blog_category_'].includes(p.category)).length === 0 ? (
                         <tr>
                           <td
                             colSpan={6}
@@ -1240,7 +1310,7 @@ create policy "Enable all access for all users" on public.posts for all using (t
                           </td>
                         </tr>
                       ) : (
-                        posts.map((post) => (
+                        posts.filter(p => !['_blog_section_', '_blog_category_'].includes(p.category)).map((post) => (
                           <tr
                             key={post.id}
                             className="hover:bg-slate-50 transition"
@@ -1308,7 +1378,9 @@ create policy "Enable all access for all users" on public.posts for all using (t
                   </table>
                 </div>
               </div>
-            ) : (
+            )}
+            
+            {blogView === "form" && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
                 <form onSubmit={handleSavePost} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1375,11 +1447,11 @@ create policy "Enable all access for all users" on public.posts for all using (t
 
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2">
-                        Date
+                        Schedule Date & Time
                       </label>
                       <input
                         required
-                        type="date"
+                        type="datetime-local"
                         value={blogForm.date}
                         onChange={(e) =>
                           setBlogForm({ ...blogForm, date: e.target.value })
@@ -1395,6 +1467,7 @@ create policy "Enable all access for all users" on public.posts for all using (t
                       <input
                         required
                         type="text"
+                        list="blog-categories"
                         value={blogForm.category}
                         onChange={(e) =>
                           setBlogForm({ ...blogForm, category: e.target.value })
@@ -1402,6 +1475,57 @@ create policy "Enable all access for all users" on public.posts for all using (t
                         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 outline-none"
                         placeholder="e.g. Guidance"
                       />
+                      <datalist id="blog-categories">
+                        {posts.filter(p => p.category === '_blog_category_').map(cat => (
+                            <option key={cat.id} value={cat.title} />
+                        ))}
+                      </datalist>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">
+                            Display On Page
+                          </label>
+                          <select
+                            value={blogForm.displayPage}
+                            onChange={(e) =>
+                              setBlogForm({ ...blogForm, displayPage: e.target.value })
+                            }
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 outline-none bg-white"
+                          >
+                            <option value="all">Everywhere / Default</option>
+                            <option value="home">Home Page</option>
+                            <option value="blog">Main Blog Page</option>
+                            <optgroup label="Services Pages">
+                              {serviceCategories.map(cat => (
+                                  <option key={cat.id} value={`service_${cat.id}`}>{cat.title}</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                          <p className="text-xs text-slate-500 mt-1">Which page should this appear on?</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">
+                            Display Section
+                          </label>
+                          <select
+                            value={blogForm.displaySection}
+                            onChange={(e) =>
+                              setBlogForm({ ...blogForm, displaySection: e.target.value })
+                            }
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-spirit-500 outline-none bg-white"
+                          >
+                            <option value="all">Any / Default</option>
+                            <optgroup label="Layout Sections">
+                                {posts.filter(p => p.category === '_blog_section_').map(sec => (
+                                    <option key={sec.id} value={sec.id}>{sec.title || "Unnamed Section"}</option>
+                                ))}
+                            </optgroup>
+                          </select>
+                          <p className="text-xs text-slate-500 mt-1">Bind to a specific Layout Section?</p>
+                        </div>
                     </div>
 
                     <div>
