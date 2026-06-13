@@ -17,6 +17,8 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<{ data: any; error: any }>;
   logout: () => Promise<void>;
   loading: boolean;
+  purchasedProductIds: string[];
+  refreshPurchasedProducts: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,6 +27,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [purchasedProductIds, setPurchasedProductIds] = useState<string[]>([]);
 
   useEffect(() => {
     // Check active session on startup
@@ -64,6 +67,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       email: sbUser.email || '',
     };
   };
+
+  const refreshPurchasedProducts = async () => {
+    if (!user) {
+      setPurchasedProductIds([]);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('items')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error("Error fetching purchases for context:", error);
+        return;
+      }
+
+      if (data) {
+        const ids: string[] = [];
+        data.forEach((order: any) => {
+          if (order.items && Array.isArray(order.items)) {
+            order.items.forEach((item: any) => {
+              if (item && item.id && !item.isMeta) {
+                ids.push(String(item.id));
+              }
+            });
+          }
+        });
+        setPurchasedProductIds([...new Set(ids)]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch purchases in auth context", err);
+    }
+  };
+
+  useEffect(() => {
+    refreshPurchasedProducts();
+  }, [user]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -113,7 +154,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAuthenticated: !!user, login, signup, logout, loading }}>
+    <AuthContext.Provider value={{ user, session, isAuthenticated: !!user, login, signup, logout, loading, purchasedProductIds, refreshPurchasedProducts }}>
       {!loading && children}
     </AuthContext.Provider>
   );

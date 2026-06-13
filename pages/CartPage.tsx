@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase';
 
 const CartPage: React.FC = () => {
   const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refreshPurchasedProducts } = useAuth();
   const [isCheckout, setIsCheckout] = useState(false);
   const location = useLocation();
   
@@ -319,6 +319,7 @@ const CartPage: React.FC = () => {
     setTimeout(() => {
         setIsProcessing(false);
         setOrderComplete(true);
+        refreshPurchasedProducts();
         clearCart();
         setAppliedCoupon(null);
         setDiscountAmount(0);
@@ -337,7 +338,7 @@ const CartPage: React.FC = () => {
                     Your secure checkout session goes through Safepay. Please click the button below to complete your payment in a new tab.
                 </p>
                 <div className="flex flex-col gap-3">
-                    <a href={safepayCheckoutUrl} target="_blank" rel="noopener noreferrer" onClick={() => { setSafepayCheckoutUrl(null); setOrderComplete(true); clearCart(); setAppliedCoupon(null); setDiscountAmount(0); }} className="inline-flex items-center justify-center bg-[#1A73E8] text-white font-bold py-4 px-10 rounded-xl hover:bg-blue-700 transition shadow-lg w-full">
+                    <a href={safepayCheckoutUrl} target="_blank" rel="noopener noreferrer" onClick={() => { setSafepayCheckoutUrl(null); setOrderComplete(true); refreshPurchasedProducts(); clearCart(); setAppliedCoupon(null); setDiscountAmount(0); }} className="inline-flex items-center justify-center bg-[#1A73E8] text-white font-bold py-4 px-10 rounded-xl hover:bg-blue-700 transition shadow-lg w-full">
                         Open Safepay Checkout
                     </a>
                     <button onClick={() => setSafepayCheckoutUrl(null)} className="inline-flex items-center justify-center bg-white text-slate-500 font-bold py-4 px-10 rounded-xl border-2 border-slate-100 hover:bg-slate-50 transition w-full">
@@ -415,7 +416,11 @@ const CartPage: React.FC = () => {
                             src={item.image} 
                             alt={item.name} 
                             className={`w-full h-full object-cover ${item.isBlurBeforeBuy ? 'blur-[2px]' : ''}`} 
+                            style={item.isWrapBeforeBuy ? { clipPath: 'polygon(0 0, 100% 0, 100% 35%, 35% 100%, 0 100%)' } : undefined}
                         />
+                        {item.isWrapBeforeBuy && (
+                            <div className="absolute inset-0 bg-amber-950/40 pointer-events-none" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 35%, 35% 100%, 0 100%)' }} />
+                        )}
                       </div>
                       <div className="flex-grow">
                         <h3 className="font-serif font-bold text-lg text-spirit-900 mb-1">{item.name}</h3>
@@ -605,11 +610,17 @@ const CartPage: React.FC = () => {
                         {cart.map(item => (
                             <div key={item.id} className="flex gap-4 items-center group">
                                 <div className="relative w-14 h-14 bg-white border border-slate-200 rounded-xl p-1 shadow-sm shrink-0">
-                                    <img 
-                                        src={item.image} 
-                                        alt={item.name} 
-                                        className="w-full h-full object-cover rounded-lg" 
-                                    />
+                                    <div className="w-full h-full relative rounded-lg overflow-hidden">
+                                        <img 
+                                            src={item.image} 
+                                            alt={item.name} 
+                                            className={`w-full h-full object-cover ${item.isBlurBeforeBuy ? 'blur-[2px]' : ''}`}
+                                            style={item.isWrapBeforeBuy ? { clipPath: 'polygon(0 0, 100% 0, 100% 35%, 35% 100%, 0 100%)' } : undefined}
+                                        />
+                                        {item.isWrapBeforeBuy && (
+                                            <div className="absolute inset-0 bg-amber-950/40 pointer-events-none" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 35%, 35% 100%, 0 100%)' }} />
+                                        )}
+                                    </div>
                                     <div className="absolute -top-2 -right-2 bg-gray-600 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full shadow-md z-10 border-2 border-white">
                                         {item.quantity}
                                     </div>

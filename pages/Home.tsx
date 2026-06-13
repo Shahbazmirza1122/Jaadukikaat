@@ -34,6 +34,7 @@ import DynamicSection from "../components/DynamicSection";
 import { PageSection } from "../types";
 import { usePageSections } from "../hooks/usePageSections";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 import { TypewriterText } from "../components/TypewriterText";
 import { BlogSectionsRenderer } from "../components/BlogSectionsRenderer";
 
@@ -109,6 +110,8 @@ const Home: React.FC = () => {
   const [blogSections, setBlogSections] = useState<any[]>([]);
   const [productsList, setProductsList] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [selectedWrapProduct, setSelectedWrapProduct] = useState<Product | null>(null);
+  const { purchasedProductIds } = useAuth();
   const [bannerSlides, setBannerSlides] = useState<any[]>([]);
   const { sections: pageSections } = usePageSections("/");
   const location = useLocation();
@@ -225,6 +228,7 @@ const Home: React.FC = () => {
             saleEnd: p.sale_end,
             isOutOfStock: p.is_out_of_stock,
             isBlurBeforeBuy: p.is_blur_before_buy,
+            isWrapBeforeBuy: p.is_wrap_before_buy,
           }));
           setProductsList(mapped);
         }
@@ -943,6 +947,10 @@ const Home: React.FC = () => {
                     ? product.salePrice
                     : product.price;
 
+                  const isPurchased = purchasedProductIds.includes(String(product.id));
+                  const shouldBlur = product.isBlurBeforeBuy && !isPurchased;
+                  const shouldWrap = product.isWrapBeforeBuy && !isPurchased;
+
                   return (
                     <Link
                       to={`/product/${product.id}`}
@@ -969,12 +977,33 @@ const Home: React.FC = () => {
                           loading={index < 4 ? "eager" : "lazy"}
                           className={`w-full h-full object-cover transform group-hover:scale-110 transition duration-700 
                                           ${product.isOutOfStock ? "grayscale opacity-70" : ""} 
-                                          ${product.isBlurBeforeBuy ? "blur-md scale-110" : ""}
+                                          ${shouldBlur ? "blur-md scale-110" : ""}
                                       `}
+                          style={shouldWrap ? { clipPath: 'polygon(0 0, 100% 0, 100% 35%, 35% 100%, 0 100%)' } : undefined}
                         />
 
+                        {/* Wrap Overlay (Top-Left diagonal shroud) */}
+                        {shouldWrap && !product.isOutOfStock && (
+                            <div 
+                                className="absolute inset-0 z-20 cursor-pointer pointer-events-auto"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setSelectedWrapProduct(product);
+                                }}
+                            >
+                                <div 
+                                    className="absolute inset-0 bg-amber-950/40 pointer-events-none"
+                                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% 35%, 35% 100%, 0 100%)' }}
+                                />
+                                <div className="absolute top-4 left-4 bg-amber-500/80 backdrop-blur-sm text-spirit-950 text-[10px] uppercase font-bold tracking-widest px-2 py-1 rounded-md flex items-center gap-1 shadow-lg">
+                                  <Lock size={10} /> Wrapped
+                                </div>
+                            </div>
+                        )}
+
                         {/* Blur Overlay Label */}
-                        {product.isBlurBeforeBuy && !product.isOutOfStock && (
+                        {shouldBlur && !product.isOutOfStock && (
                           <div className="absolute inset-0 flex items-center justify-center z-20">
                             <div className="bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 text-white font-bold uppercase text-[10px] tracking-widest shadow-lg flex items-center gap-2">
                               <Lock size={12} /> Hidden Content
@@ -2224,6 +2253,70 @@ const Home: React.FC = () => {
             >
               Alhamdulillah
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* REVEAL WRAPPED IMAGE MODAL */}
+      {selectedWrapProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+              className="absolute inset-0 bg-spirit-950/80 backdrop-blur-md" 
+              onClick={() => setSelectedWrapProduct(null)}
+          />
+          <div className="relative bg-white rounded-[2rem] max-w-sm w-full overflow-hidden shadow-2xl border border-spirit-100 z-10 animate-scale-up">
+            <div className="bg-gradient-to-br from-spirit-900 to-amber-950 p-6 text-center text-white relative">
+              <button 
+                onClick={() => setSelectedWrapProduct(null)} 
+                className="absolute top-4 right-4 text-white/50 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition"
+              >
+                <X size={16} />
+              </button>
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-3 text-amber-400">
+                <Lock size={20} className="animate-pulse" />
+              </div>
+              <h3 className="font-serif font-bold text-lg uppercase tracking-wide text-amber-100 font-serif">Premium Image Wrapped</h3>
+              <p className="text-[10px] text-slate-300 mt-1 font-sans">The original high-resolution original scan remains covered</p>
+            </div>
+            
+            <div className="p-6 text-center space-y-4">
+              <div className="w-28 h-28 mx-auto rounded-2xl overflow-hidden shadow-lg border border-slate-100 relative bg-slate-50">
+                <img 
+                  src={selectedWrapProduct.image} 
+                  alt={selectedWrapProduct.name} 
+                  className="w-full h-full object-cover" 
+                  style={{ clipPath: 'polygon(0 0, 100% 0, 100% 10%, 10% 100%, 0 100%)' }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-spirit-950 to-amber-950/80" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 10%, 10% 100%, 0 100%)' }} />
+                <div className="absolute right-2 bottom-2 bg-amber-500 text-spirit-950 p-1 rounded-full"><Lock size={12} /></div>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-sans font-bold text-gray-800 uppercase tracking-wider text-xs">{selectedWrapProduct.name}</h4>
+                <p className="text-[11px] text-gray-500 leading-relaxed max-w-xs mx-auto">
+                  To protect the authentic physical/spiritual properties, this image is partially covered.
+                </p>
+                <p className="text-[11px] text-spirit-800 font-bold bg-spirit-50 py-2 px-3 rounded-lg border border-spirit-100 inline-block font-mono">
+                  🔒 Buy this product to view the full image.
+                </p>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
+              <button
+                onClick={() => setSelectedWrapProduct(null)}
+                className="flex-1 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                Close
+              </button>
+              <Link
+                to={`/product/${selectedWrapProduct.id}`}
+                onClick={() => setSelectedWrapProduct(null)}
+                className="flex-1 bg-spirit-900 text-white py-2 text-xs font-bold rounded-lg text-center hover:bg-spirit-800 transition shadow-md"
+              >
+                View Product
+              </Link>
+            </div>
           </div>
         </div>
       )}

@@ -13,6 +13,7 @@ export interface Product {
   saleEnd?: string;
   isOutOfStock?: boolean;
   isBlurBeforeBuy?: boolean;
+  isWrapBeforeBuy?: boolean;
 }
 
 export const products: Product[] = [

@@ -269,6 +269,7 @@ const Admin: React.FC = () => {
     saleEnd: "",
     isOutOfStock: false,
     isBlurBeforeBuy: false,
+    isWrapBeforeBuy: false,
   });
 
   // Database Schema State
@@ -511,6 +512,7 @@ const Admin: React.FC = () => {
         saleEnd: p.sale_end,
         isOutOfStock: p.is_out_of_stock,
         isBlurBeforeBuy: p.is_blur_before_buy,
+        isWrapBeforeBuy: p.is_wrap_before_buy,
       }));
       setProducts(mappedProducts);
       setMissingTables((prev) => prev.filter((t) => t !== "products"));
@@ -697,6 +699,7 @@ const Admin: React.FC = () => {
       saleEnd: "",
       isOutOfStock: false,
       isBlurBeforeBuy: false,
+      isWrapBeforeBuy: false,
     });
   };
 
@@ -724,6 +727,7 @@ const Admin: React.FC = () => {
       saleEnd: product.saleEnd || "",
       isOutOfStock: product.isOutOfStock || false,
       isBlurBeforeBuy: product.isBlurBeforeBuy || false,
+      isWrapBeforeBuy: product.isWrapBeforeBuy || false,
     });
     setProductView("form");
   };
@@ -760,6 +764,7 @@ const Admin: React.FC = () => {
       sale_end: productForm.saleEnd,
       is_out_of_stock: productForm.isOutOfStock,
       is_blur_before_buy: productForm.isBlurBeforeBuy,
+      is_wrap_before_buy: productForm.isWrapBeforeBuy,
     };
 
     let error;
@@ -930,7 +935,8 @@ create table if not exists public.products (
   sale_start text,
   sale_end text,
   is_out_of_stock boolean default false,
-  is_blur_before_buy boolean default false
+  is_blur_before_buy boolean default false,
+  is_wrap_before_buy boolean default false
 );
 
 -- Add columns if table exists but columns do not
@@ -940,6 +946,7 @@ alter table public.products add column if not exists sale_start text;
 alter table public.products add column if not exists sale_end text;
 alter table public.products add column if not exists is_out_of_stock boolean default false;
 alter table public.products add column if not exists is_blur_before_buy boolean default false;
+alter table public.products add column if not exists is_wrap_before_buy boolean default false;
 
 -- Enable RLS for Products (Drop first to avoid duplication errors)
 alter table public.products enable row level security;
@@ -2420,11 +2427,17 @@ create policy "Enable all access for all users" on public.posts for all using (t
                             <td className="px-6 py-4">
                               <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 relative">
                                 {product.image ? (
-                                  <img
-                                    src={product.image}
-                                    alt=""
-                                    className={`w-full h-full object-cover ${product.isBlurBeforeBuy ? "blur-[2px]" : ""}`}
-                                  />
+                                  <div className="w-full h-full relative">
+                                    <img
+                                      src={product.image}
+                                      alt=""
+                                      className={`w-full h-full object-cover ${product.isBlurBeforeBuy ? "blur-[2px]" : ""}`}
+                                      style={product.isWrapBeforeBuy ? { clipPath: 'polygon(0 0, 100% 0, 100% 35%, 35% 100%, 0 100%)' } : undefined}
+                                    />
+                                    {product.isWrapBeforeBuy && (
+                                      <div className="absolute inset-0 bg-amber-950/40 pointer-events-none" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 35%, 35% 100%, 0 100%)' }} />
+                                    )}
+                                  </div>
                                 ) : (
                                   <ImageIcon className="w-6 h-6 m-3 text-gray-300" />
                                 )}
@@ -2473,6 +2486,12 @@ create policy "Enable all access for all users" on public.posts for all using (t
                                   <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-wide">
                                     <EyeOffIcon className="w-3 h-3 mr-1" />{" "}
                                     Blurred
+                                  </div>
+                                )}
+                                {product.isWrapBeforeBuy && (
+                                  <div className="flex items-center text-[10px] text-amber-600 font-bold uppercase tracking-wide">
+                                    <Lock className="w-3 h-3 mr-1" />{" "}
+                                    Wrapped
                                   </div>
                                 )}
                               </div>
@@ -2680,6 +2699,30 @@ create policy "Enable all access for all users" on public.posts for all using (t
                         <span className="ml-3 text-sm font-bold text-gray-700 flex items-center">
                           <EyeOffIcon className="w-4 h-4 mr-2 text-gray-500" />
                           Blur Before Purchase
+                        </span>
+                      </div>
+
+                      {/* Wrap Image Toggle */}
+                      <div className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setProductForm({
+                              ...productForm,
+                              isWrapBeforeBuy: !productForm.isWrapBeforeBuy,
+                            })
+                          }
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${productForm.isWrapBeforeBuy ? "bg-amber-600" : "bg-gray-200"}`}
+                        >
+                          <span className="sr-only">Use setting</span>
+                          <span
+                            aria-hidden="true"
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${productForm.isWrapBeforeBuy ? "translate-x-5" : "translate-x-0"}`}
+                          />
+                        </button>
+                        <span className="ml-3 text-sm font-bold text-gray-700 flex items-center">
+                          <Lock className="w-4 h-4 mr-2 text-gray-500" />
+                          Wrap Image (Top Left Diagonal 60%)
                         </span>
                       </div>
                     </div>

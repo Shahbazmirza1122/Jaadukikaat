@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Heart, Star, Check, ShieldCheck, Truck, RotateCcw, Loader2, Tag, XCircle, Lock, Zap } from 'lucide-react';
 import { products as staticProducts, Product } from '../data/products';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
 const ProductPage: React.FC = () => {
@@ -11,8 +12,14 @@ const ProductPage: React.FC = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const { addToCart } = useCart();
+  const { purchasedProductIds } = useAuth();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showRevealModal, setShowRevealModal] = useState(false);
+
+  const isPurchased = product ? purchasedProductIds.includes(String(product.id)) : false;
+  const shouldBlur = product?.isBlurBeforeBuy && !isPurchased;
+  const shouldWrap = product?.isWrapBeforeBuy && !isPurchased;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -48,7 +55,8 @@ const ProductPage: React.FC = () => {
              saleStart: data.sale_start,
              saleEnd: data.sale_end,
              isOutOfStock: data.is_out_of_stock,
-             isBlurBeforeBuy: data.is_blur_before_buy
+             isBlurBeforeBuy: data.is_blur_before_buy,
+             isWrapBeforeBuy: data.is_wrap_before_buy
            });
         }
       } catch (err) {
@@ -177,12 +185,29 @@ const ProductPage: React.FC = () => {
                 alt={product.name} 
                 className={`w-full h-full object-cover transition-transform duration-700 
                     ${product.isOutOfStock ? 'grayscale opacity-60' : 'hover:scale-105'}
-                    ${product.isBlurBeforeBuy ? 'blur-xl scale-110' : ''}
+                    ${shouldBlur ? 'blur-xl scale-110' : ''}
                 `}
+                style={shouldWrap ? { clipPath: 'polygon(0 0, 100% 0, 100% 35%, 35% 100%, 0 100%)' } : undefined}
               />
                
+               {/* Wrap Overlay (Top-Left diagonal shroud) */}
+               {shouldWrap && !product.isOutOfStock && (
+                    <div 
+                        className="absolute inset-0 z-20 cursor-pointer group/wrap-cover pointer-events-auto"
+                        onClick={() => setShowRevealModal(true)}
+                    >
+                        <div 
+                            className="absolute inset-0 bg-amber-950/40 pointer-events-none"
+                            style={{ clipPath: 'polygon(0 0, 100% 0, 100% 35%, 35% 100%, 0 100%)' }}
+                        />
+                        <div className="absolute top-6 left-6 bg-amber-500/80 backdrop-blur-sm text-spirit-950 text-xs uppercase font-bold tracking-widest px-3 py-1.5 rounded-md flex items-center gap-1.5 shadow-lg">
+                            <Lock size={14} className="animate-pulse" /> Premium Shrouded Artifact
+                        </div>
+                    </div>
+               )}
+
                {/* Blur Overlay */}
-               {product.isBlurBeforeBuy && !product.isOutOfStock && (
+               {shouldBlur && !product.isOutOfStock && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center z-10 p-6 text-center">
                         <div className="bg-black/30 backdrop-blur-sm p-4 rounded-2xl border border-white/20 text-white shadow-2xl">
                             <Lock size={32} className="mx-auto mb-2 opacity-80" />
@@ -313,6 +338,75 @@ const ProductPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* REVEAL WRAPPED IMAGE MODAL */}
+      {showRevealModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+              className="absolute inset-0 bg-spirit-950/80 backdrop-blur-md" 
+              onClick={() => setShowRevealModal(false)}
+          />
+          <div className="relative bg-white rounded-[2rem] max-w-sm w-full overflow-hidden shadow-2xl border border-spirit-100 z-10 animate-scale-up">
+            {/* Top header banner in modal with gold design */}
+            <div className="bg-gradient-to-br from-spirit-900 to-amber-950 p-6 text-center text-white relative">
+              <button 
+                onClick={() => setShowRevealModal(false)} 
+                className="absolute top-4 right-4 text-white/50 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition"
+              >
+                <XCircle size={16} />
+              </button>
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-3 text-amber-400">
+                <Lock size={20} className="animate-pulse" />
+              </div>
+              <h3 className="font-serif font-bold text-lg uppercase tracking-wide text-amber-100">Premium Image Wrapped</h3>
+              <p className="text-[10px] text-slate-300 mt-1 font-sans">The original high-resolution physical item remains covered</p>
+            </div>
+            
+            {/* Product Preview Body */}
+            <div className="p-6 text-center space-y-4">
+              <div className="w-28 h-28 mx-auto rounded-2xl overflow-hidden shadow-lg border border-slate-100 relative bg-slate-50">
+                <img 
+                  src={product.image} 
+                  alt={product.name} 
+                  className="w-full h-full object-cover" 
+                  style={{ clipPath: 'polygon(0 0, 100% 0, 100% 10%, 10% 100%, 0 100%)' }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-spirit-950 to-amber-950/80" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 10%, 10% 100%, 0 100%)' }} />
+                <div className="absolute right-2 bottom-2 bg-amber-500 text-spirit-950 p-1 rounded-full"><Lock size={12} /></div>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-sans font-bold text-gray-800 uppercase tracking-wider text-xs">{product.name}</h4>
+                <p className="text-[11px] text-gray-500 leading-relaxed max-w-xs mx-auto">
+                  To preserve the sacred and pristine energetic properties of this premium article, its high-definition digital representation is diagonally shrouded.
+                </p>
+                <p className="text-[11px] text-spirit-800 font-bold bg-spirit-50 py-2 px-3 rounded-lg border border-spirit-100 inline-block font-mono">
+                  🔒 Buy this product to view/unlock the full image.
+                </p>
+              </div>
+            </div>
+            
+            {/* Buy / Close Actions */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
+              <button
+                onClick={() => setShowRevealModal(false)}
+                className="flex-1 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setShowRevealModal(false);
+                  handleBuyNow();
+                }}
+                className="flex-1 bg-spirit-900 text-white py-2 text-xs font-bold rounded-lg text-center hover:bg-spirit-800 transition shadow-md"
+              >
+                Buy This Product
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
